@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
+
+# Distribution / packaging
+dist/
+*.egg-info/
+_version.py
+build/
+
+#db, web
+.DS_Store
+
+#Documentation
+docs/build
+docs/source/package/zhinst.utils.*.rst
+
+# Envs
+venv*/
