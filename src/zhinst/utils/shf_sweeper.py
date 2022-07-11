@@ -6,12 +6,11 @@
 from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum, auto
-from sys import int_info
 import time
-import math
 import textwrap
 import numpy as np
-from .. import utils
+from zhinst.utils import utils
+from zhinst.ziPython import compile_seqc
 
 
 class _Mapping(Enum):
@@ -236,9 +235,9 @@ def _check_envelope_waveform(wave_vector):
         wave_vector: the waveform vector to be checked
     """
     if wave_vector is None:
-        raise ValueError(f"No envelope waveform specified.")
+        raise ValueError("No envelope waveform specified.")
 
-    max_envelope_length = 2 ** 16
+    max_envelope_length = 2**16
     if len(wave_vector) > max_envelope_length:
         raise ValueError(
             f"Envelope length exceeds maximum of {max_envelope_length} samples."
@@ -249,7 +248,8 @@ def _check_envelope_waveform(wave_vector):
     #       stated here explicitly as a guidance to the user.
     if np.any(np.abs(wave_vector) > 1.0):
         raise ValueError(
-            f"The absolute value of each envelope vector element must be smaller than 1."
+            "The absolute value of each envelope vector element must be smaller "
+            "than 1."
         )
 
 
@@ -300,12 +300,12 @@ def _print_sweep_progress(current, total, freq, newline=False):
     )
 
 
-def _round_for_playzero(time: float, sample_rate: float):
+def _round_for_playzero(time_interval: float, sample_rate: float):
     """
     Rounds a time interval to the granularity of the playZero SeqC command
 
     Arguments:
-        time:           the time interval to be rounded for the playZero command
+        time_interval: the time interval to be rounded for the playZero command
         sample_rate:    the sample rate of the instrument
 
     Returns:
@@ -315,7 +315,7 @@ def _round_for_playzero(time: float, sample_rate: float):
 
     # round up the number of samples to multiples of playzero_granularity
     num_samples = (
-        ((round(time * sample_rate) + (playzero_granularity - 1)))
+        ((round(time_interval * sample_rate) + (playzero_granularity - 1)))
         // playzero_granularity
     ) * playzero_granularity
     return num_samples / sample_rate
@@ -352,7 +352,7 @@ def _subscribe_with_assert(daq, node_path: str) -> bool:
         node_path:          the path of the node to be checked
     """
     assert not _is_subscribed(daq, node_path), (
-        f"The following node was already subscribed:\n"
+        "The following node was already subscribed:\n"
         + node_path
         + "\n"
         + "This would lead to unexpected behavior!"
@@ -406,7 +406,7 @@ class TriggerConfig:
 
     source: str = None
     """trigger source. Please refer to the node documentation in the user manual under
-    /DEV…​./QACHANNELS/n/GENERATOR/AUXTRIGGERS/n/CHANNEL for a list of possible sources.
+    /DEV.../QACHANNELS/n/GENERATOR/AUXTRIGGERS/n/CHANNEL for a list of possible sources.
     The default source (None) means the repetition rate of the experiment will be
     determined by the sequencer using the integration time in AvgConfig and settling
     time in SweepConfig.
@@ -450,7 +450,8 @@ class ShfSweeper:
         self._rf = RfConfig()
         self._avg = AvgConfig()
         self._trig = TriggerConfig()
-        self._envelope = None  # the envelope multiplication is enabled if and only if this member is not None
+        # the envelope multiplication is enabled if and only if this member is not None
+        self._envelope = None
         self._shf_sample_rate = 2e9
         self._result = []
 
@@ -543,17 +544,17 @@ class ShfSweeper:
         Configure and check the settings
 
         Arguments:
-
-          sweep_config (SweepConfig, optional): @dataclass containing sweep configuration (None: default configuration applies)
-
-          avg_config (AvgConfig, optional): @dataclass with averaging configuration (None: default configuration applies)
-
-          rf_config (RfConfig, optional): @dataclass with RF configuration (None: default configuration applies)
-
-          trig_config (TriggerConfig, optional): @dataclass with trigger configuration (None: default configuration applies)
-
-          envelope_config: (EnvelopeConfig, optional): @dataclass configuring the envelope for pulse spectroscopy
-                                                       (None: the multiplication with the envelope is disabled)
+          sweep_config (SweepConfig, optional): @dataclass containing sweep
+            configuration (None: default configuration applies)
+          avg_config (AvgConfig, optional): @dataclass with averaging configuration
+            (None: default configuration applies)
+          rf_config (RfConfig, optional): @dataclass with RF configuration
+            (None: default configuration applies)
+          trig_config (TriggerConfig, optional): @dataclass with trigger
+            configuration (None: default configuration applies)
+          envelope_config: (EnvelopeConfig, optional): @dataclass configuring
+            the envelope for pulse spectroscopy (None: the multiplication with
+            the envelope is disabled)
         """
 
         self._check_config(
@@ -755,7 +756,8 @@ class ShfSweeper:
         """
         if self._trig.source is None:
             raise ValueError(
-                "Trigger source cannot be None if use_sequencer is set to False in SweepConfig"
+                "Trigger source cannot be None if use_sequencer is set to False in "
+                "SweepConfig"
             )
         self._daq.setString(
             self._path_prefix + "spectroscopy/trigger/channel",
@@ -832,8 +834,6 @@ class ShfSweeper:
             freq:   the frequency to be configured
         """
         self._daq.syncSetDouble(self._path_prefix + "oscs/0/freq", freq)
-        # remember the current frequency in an internal variable for status reporting
-        self._current_freq = freq
 
     def _get_freq_sequencer(self, num_acquired: int) -> float:
         """
@@ -851,11 +851,10 @@ class ShfSweeper:
             return self._sweep.start_freq + self._freq_step * (
                 num_acquired % self._sweep.num_points
             )
-        else:
-            # Sequential averaging
-            return self._sweep.start_freq + self._freq_step * (
-                num_acquired // self._avg.num_averages
-            )
+        # Sequential averaging
+        return self._sweep.start_freq + self._freq_step * (
+            num_acquired // self._avg.num_averages
+        )
 
     def _poll_results(
         self, data_path: str, acquired_path: str, expected_num_results: int
@@ -924,10 +923,11 @@ class ShfSweeper:
                 return result_logger_data
 
         if results > 0:
-            err = f"failed to get a new result in {result_timeout} seconds, so far only got {results}!"
-        else:
-            err = f"failed to get any result in {result_timeout} seconds!"
-        raise TimeoutError(err)
+            raise TimeoutError(
+                f"failed to get a new result in {result_timeout} seconds, so far "
+                f"only got {results}!"
+            )
+        raise TimeoutError(f"failed to get any result in {result_timeout} seconds!")
 
     def _wait_for_results_host(self, freq, num_results):
         """
@@ -972,10 +972,11 @@ class ShfSweeper:
                 return
 
         if results > 0:
-            err = f"failed to get a new result in {result_timeout} seconds, so far only got {results}!"
-        else:
-            err = f"failed to get any result in {result_timeout} seconds!"
-        raise TimeoutError(err)
+            raise TimeoutError(
+                f"failed to get a new result in {result_timeout} seconds, so far "
+                f"only got {results}!"
+            )
+        raise TimeoutError(f"failed to get any result in {result_timeout} seconds!")
 
     def _wait_for_results_host_sw_trig(self, expected_results, wait_time=1):
         """
@@ -1190,40 +1191,18 @@ class ShfSweeper:
         # first, reset the sequencer
         self._daq.syncSetInt(self._path_prefix + "generator/reset", 1)
 
-        awg_module = self._daq.awgModule()
-        awg_module.set("device", self._dev)
-        awg_module.set("sequencertype", "qa")
-        awg_module.set("index", self._rf.channel)
-        awg_module.execute()
-        awg_module.set("compiler/sourcestring", sequencer_program)
-
-        t_start = time.time()
-        compiler_status = awg_module.getInt("compiler/status")
-        timeout_occurred = False
-        while compiler_status == -1 and not timeout_occurred:
-            if time.time() - t_start > timeout:
-                # a timeout occurred
-                timeout_occurred = True
-                break
-            # wait
-            time.sleep(0.1)
-            # query new status
-            compiler_status = awg_module.getInt("compiler/status")
-
-        # check the status after compilation and upload
-        if timeout_occurred or compiler_status != 0:
-            # an info, warning or error occurred - check what it is
-            compiler_status = awg_module.getInt("compiler/status")
-            statusstring = awg_module.getString("compiler/statusstring")
-            if timeout_occurred:
-                raise RuntimeError(
-                    f"Timeout during program compilation after {timeout} s,\n"
-                    + statusstring
-                )
-            else:
-                raise RuntimeError(
-                    f"Failed to compile program for channel,\n" + statusstring
-                )
+        device_type = self._daq.getString(f"/{self._dev}/features/devtype")
+        device_options = self._daq.getString(f"/{self._dev}/features/options")
+        elf, _ = compile_seqc(
+            sequencer_program,
+            device_type,
+            device_options,
+            self._rf.channel,
+            sequencer="qa",
+        )
+        self._daq.setVector(
+            f"/{self._dev}/qachannels/{self._rf.channel}/generator/elf/data", elf
+        )
 
         # wait until the device becomes ready after program upload
         utils.wait_for_state_change(
@@ -1250,11 +1229,13 @@ class ShfSweeper:
             f"Measures {self._avg.num_averages} times per frequency point. \n"
             f"Averaging mode is {self._avg.mode}.\n"
         )
-        detail_str += (
-            f"Trigger source is {self._trig.source.lower()}."
-            if self._trig.source is not None
-            else f"Trigger source is set to None, which means the sequencer defines the repetition rate."
-        )
+        if self._trig.source is not None:
+            detail_str += f"Trigger source is {self._trig.source.lower()}."
+        else:
+            detail_str += str(
+                "Trigger source is set to None, which means the sequencer "
+                "defines the repetition rate."
+            )
         print(detail_str)
 
     def _configure_result_length_and_averages_host(self) -> int:
@@ -1272,7 +1253,8 @@ class ShfSweeper:
         else:
             num_results = 1
         self._daq.setInt(self._path_prefix + "spectroscopy/result/length", num_results)
-        # for the host-based approach, we always average in software, thus set the hardware averages to 1
+        # for the host-based approach, we always average in software, thus set the
+        # hardware averages to 1
         self._daq.setInt(self._path_prefix + "spectroscopy/result/averages", 1)
         return num_results
 
@@ -1320,7 +1302,7 @@ class ShfSweeper:
         return avg_vec
 
     def _check_integration_time(self, integration_time_s):
-        max_int_len = ((2 ** 23) - 1) * 4
+        max_int_len = ((2**23) - 1) * 4
         min_int_len = 4
         max_integration_time = max_int_len / self._shf_sample_rate
         min_integration_time = min_int_len / self._shf_sample_rate

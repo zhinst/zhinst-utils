@@ -1,6 +1,4 @@
-"""
-Zurich Instruments LabOne Python API Utility functions for SHFQC.
-"""
+"""Zurich Instruments LabOne Python API Utility functions for SHFQC."""
 import numpy as np
 from zhinst.ziPython import AwgModule, ziDAQServer
 
@@ -16,7 +14,6 @@ def max_qubits_per_qa_channel(daq: ziDAQServer, device_id: str) -> int:
             be connected to this instance.
         device_id: SHFQC device identifier, e.g. `dev12004` or 'shf-dev12004'.
     """
-
     return shfqa.max_qubits_per_channel(daq, device_id)
 
 
@@ -43,8 +40,7 @@ def load_sequencer_program(
         sequencer_program: Sequencer program to be uploaded.
         channel_type: Identifier specifing if the sequencer from the qa or sg
             channel should be used. ("qa" or "sg")
-        awg_module: AWG module instance used to interact with the sequencer. If
-            none is provided, a new local instance will be created.
+        awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
         timeout: Maximum time to wait for the compilation on the device in
             seconds.
     """
@@ -174,6 +170,7 @@ def configure_scope(
         input_select: Keys (int) map a specific scope channel with a signal
             source (str), e.g. "channel0_signal_input". For a list of available
             values use daq.help(f"/{device_id}/scopes/0/channels/0/inputselect").
+        num_samples: Number of samples.
         trigger_input: Specifies the trigger source of the scope acquisition
             - if set to None, the self-triggering mode of the scope becomes
             active, which is useful e.g. for the GUI. For a list of available
@@ -217,14 +214,14 @@ def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 1.0) ->
             * scope_time (array): Relative acquisition time for each point in
                 recorded_data in seconds starting from 0.
     """
-
     return shfqa.get_scope_data(daq, device_id, timeout=timeout)
 
 
 def start_continuous_sw_trigger(
     daq: ziDAQServer, device_id: str, *, num_triggers: int, wait_time: float
 ) -> None:
-    """
+    """Start a continuous trigger.
+
     Issues a specified number of software triggers with a certain wait time in
     between. The function guarantees reception and proper processing of all
     triggers by the device, but the time between triggers is non-deterministic
@@ -242,7 +239,6 @@ def start_continuous_sw_trigger(
         num_triggers: Number of triggers to be issued.
         wait_time: Time between triggers in seconds.
     """
-
     return shfqa.start_continuous_sw_trigger(
         daq, device_id, num_triggers=num_triggers, wait_time=wait_time
     )
@@ -251,8 +247,9 @@ def start_continuous_sw_trigger(
 def enable_scope(
     daq: ziDAQServer, device_id: str, *, single: int, acknowledge_timeout: float = 1.0
 ) -> None:
-    """Resets and enables the scope. Blocks until the host has received the enable
-    acknowledgment from the device.
+    """Resets and enables the scope.
+
+    Blocks until the host has received the enable acknowledgment from the device.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -263,9 +260,8 @@ def enable_scope(
         acknowledge_timeout: Maximum time to wait for diverse acknowledgments
             in the implementation.
 
-            .. versionadded:: 0.1.1
+    .. versionadded:: 0.1.1
     """
-
     return shfqa.enable_scope(
         daq, device_id, single=single, acknowledge_timeout=acknowledge_timeout
     )
@@ -292,7 +288,6 @@ def configure_weighted_integration(
         clear_existing: Specify whether to set all the integration weights to
             zero before proceeding with the present upload.
     """
-
     return shfqa.configure_weighted_integration(
         daq,
         device_id,
@@ -323,7 +318,6 @@ def configure_result_logger_for_spectroscopy(
         averaging_mode: Select the averaging order of the result, with
             0 = cyclic and 1 = sequential.
     """
-
     return shfqa.configure_result_logger_for_spectroscopy(
         daq,
         device_id,
@@ -357,7 +351,6 @@ def configure_result_logger_for_readout(
         averaging_mode: Select the averaging order of the result, with
             0 = cyclic and 1 = sequential.
     """
-
     return shfqa.configure_result_logger_for_readout(
         daq,
         device_id,
@@ -372,8 +365,9 @@ def configure_result_logger_for_readout(
 def enable_result_logger(
     daq: ziDAQServer, device_id: str, *, mode: str, acknowledge_timeout: float = 1.0
 ) -> None:
-    """Resets and enables a specified result logger. Blocks until the host has
-    received the enable acknowledgment from the device.
+    """Resets and enables a specified result logger.
+
+    Blocks until the host has received the enable acknowledgment from the device.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -381,11 +375,11 @@ def enable_result_logger(
             be connected to this instance.
         device_id: SHFQC device identifier, e.g. `dev12004` or 'shf-dev12004'.
         mode: Select between "spectroscopy" and "readout" mode.
-        acknowledge_timeout: Maximum time to wait for diverse acknowledgments in the implementation.
+        acknowledge_timeout: Maximum time to wait for diverse acknowledgments
+            in the implementation.
 
-            .. versionadded:: 0.1.1
+    .. versionadded:: 0.1.1
     """
-
     return shfqa.enable_result_logger(
         daq, device_id, 0, mode=mode, acknowledge_timeout=acknowledge_timeout
     )
@@ -413,7 +407,6 @@ def get_result_logger_data(
     Returns:
         Array containing the result logger data.
     """
-
     return shfqa.get_result_logger_data(daq, device_id, 0, mode=mode, timeout=timeout)
 
 
@@ -438,7 +431,6 @@ def configure_qa_channel(
         center_frequency: Center Frequency of the analysis band.
         mode: Select between "spectroscopy" and "readout" mode.
     """
-
     return shfqa.configure_channel(
         daq,
         device_id,
@@ -469,7 +461,6 @@ def configure_qa_sequencer_triggering(
             daq.help(f"/{device_id}/qachannels/0/generator/auxtriggers/0/channel")
         play_pulse_delay: Delay in seconds before the start of waveform playback.
     """
-
     return shfqa.configure_sequencer_triggering(
         daq,
         device_id,
@@ -485,7 +476,7 @@ def upload_commandtable(
     channel_index: int,
     command_table: str,
 ) -> None:
-    """Uploads a command table in the form of a string to the appropriate channel
+    """Uploads a command table in the form of a string to the appropriate channel.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -519,14 +510,13 @@ def configure_marker_and_trigger(
         trigger_in_source: Alias for the trigger input used by the
             sequencer. For a list of available values use:
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/awg/auxtriggers/0/channel")
-        tringger_in_slope: Alias for the slope of the input trigger used
+        trigger_in_slope: Alias for the slope of the input trigger used
             by sequencer. For a list of available values use
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/awg/auxtriggers/0/slope")
         marker_out_source: Alias for the marker output source used by the
             sequencer. For a list of available values use
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/marker/source")
     """
-
     return shfsg.configure_marker_and_trigger(
         daq,
         device_id,
@@ -555,11 +545,11 @@ def configure_sg_channel(
             be connected to this instance.
         device_id: SHFQC device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index of the used SG channel.
+        enable: Whether or not to enable the channel.
         output_range: Maximal range of the signal output power in dbM.
         center_frequency: Center Frequency before modulation.
         rflf_path: Switch between RF and LF paths.
     """
-
     return shfsg.configure_channel(
         daq,
         device_id,
@@ -607,7 +597,6 @@ def configure_pulse_modulation(
         sine_generator_index: Selects which sine generator to use on a given
             channel.
     """
-
     return shfsg.configure_pulse_modulation(
         daq,
         device_id,
@@ -658,7 +647,6 @@ def configure_sine_generation(
         sine_generator_index: Selects which sine generator to use on a given
             channel.
     """
-
     return shfsg.configure_sine_generation(
         daq,
         device_id,

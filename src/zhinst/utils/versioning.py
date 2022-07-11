@@ -1,5 +1,4 @@
-""" Utility functions for versioning checks
-"""
+"""Utility functions for versioning checks."""
 
 from inspect import getfile
 from re import match
@@ -9,21 +8,20 @@ import zhinst.ziPython
 
 
 def minimum_version(min_version):
+    """Parameterized decorator to enforce a minimum ziPython version.
+
+    Args:
+        min_version (str): ziPython version with format MAJOR.MINOR or
+            MAJOR.MINOR.BUILD
+
+    Example:
+        >>> @minimum_version('21.02')
+        >>> def shfqa_example(*args):
+        >>> ....
+
+        In case the version is not supported, the above function is swapped for
+        throwing one during definition.
     """
-     Parameterized decorator to enforce a minimum ziPython version on arbitrary functions.
-
-     Example usage:
-
-     @minimum_version('21.02')
-     def shfqa_example(*args):
-         ....
-
-     In case the version is not supported, the above function is swapped for throwing one during definition.
-
-     Args:
-         min_version (str): ziPython version with format MAJOR.MINOR or MAJOR.MINOR.BUILD
-     """
-
     major_minor_format = bool(match(r"^\d\d\.\d\d$", min_version))
     major_minor_build_format = bool(match(r"^\d\d\.\d\d.\d+$", min_version))
 
@@ -34,7 +32,8 @@ def minimum_version(min_version):
         min_major, min_minor, min_build = map(int, min_version.split("."))
     else:
         raise Exception(
-            f"Wrong ziPython version format: {min_version}. Supported format: MAJOR.MINOR or MAJOR.MINOR.BUILD"
+            f"Wrong ziPython version format: {min_version}. Supported format: "
+            "MAJOR.MINOR or MAJOR.MINOR.BUILD",
         )
 
     def decorate(function):
@@ -47,12 +46,13 @@ def minimum_version(min_version):
         if not_supported:
 
             @wraps(function)
-            def throw(*args, **kwargs):
+            def throw(*_, **__):
                 *_, file_name = getfile(function).split("/")
                 raise Exception(
-                    f'Function "{function.__name__}" from file "{file_name}" requires ziPython version '
-                    f"{min_version} or higher (current: {installed_version}). Please visit the Zurich Instruments "
-                    f"website to update."
+                    f'Function "{function.__name__}" from file "{file_name}" '
+                    f"requires ziPython version {min_version} or higher (current: "
+                    f"{installed_version}). Please visit the Zurich Instruments "
+                    "website to update."
                 )
 
             return throw

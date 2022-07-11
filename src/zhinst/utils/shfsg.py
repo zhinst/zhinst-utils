@@ -1,12 +1,10 @@
-"""
-Zurich Instruments LabOne Python API Utility functions for SHFSG.
-"""
+"""Zurich Instruments LabOne Python API Utility functions for SHFSG."""
 
 import time
 import typing as t
 
 from zhinst.utils import convert_awg_waveform, wait_for_state_change
-from zhinst.ziPython import AwgModule, ziDAQServer
+from zhinst.ziPython import AwgModule, ziDAQServer, compile_seqc
 
 SHFSG_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 98304
 SHFSG_SAMPLING_FREQUENCY = 2e9
@@ -31,13 +29,10 @@ def load_sequencer_program(
         channel_index: Index specifying which sequencer to upload - there
             is one sequencer per channel.
         sequencer_program: Sequencer program to be uploaded.
-        awg_module: AWG module instance used to interact with the
-            sequencer. If none is provided, a new local instance will be
-            created. (default = None)
+        awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
         timeout: maximum time to wait for the compilation in seconds.
             (default = 10)
     """
-
     # start by resetting the sequencer
     daq.syncSetInt(
         f"/{device_id}/sgchannels/{channel_index}/awg/reset",
@@ -49,49 +44,13 @@ def load_sequencer_program(
         0,
         timeout=timeout,
     )
-    awg_module = daq.awgModule() if awg_module is None else awg_module
-    awg_module.set("device", device_id)
-    awg_module.set("sequencertype", "sg")
-    awg_module.set("index", channel_index)
-    awg_module.execute()
 
-    t_start = time.time()
-    awg_module.set("compiler/sourcestring", sequencer_program)
-    timeout_occurred = False
-
-    # start the compilation and upload
-    compiler_status = awg_module.getInt("compiler/status")
-    while compiler_status == -1 and not timeout_occurred:
-        if time.time() - t_start > timeout:
-            # a timeout occurred
-            timeout_occurred = True
-            break
-        # wait
-        time.sleep(0.1)
-        # query new status
-        compiler_status = awg_module.getInt("compiler/status")
-
-    # check the status after compilation and upload
-    if timeout_occurred or compiler_status != 0:
-        # an info, warning or error occurred - check what it is
-        compiler_status = awg_module.getInt("compiler/status")
-        statusstring = awg_module.getString("compiler/statusstring")
-        if compiler_status == 2:
-            print(
-                f"Compiler info or warning for channel {channel_index}:\n"
-                + statusstring
-            )
-        elif timeout_occurred:
-            raise RuntimeError(
-                f"Timeout during program compilation for channel {channel_index} after \
-                    {timeout} s,\n"
-                + statusstring
-            )
-        else:
-            raise RuntimeError(
-                f"Failed to compile program for channel {channel_index},\n"
-                + statusstring
-            )
+    device_type = daq.getString(f"/{device_id}/features/devtype")
+    device_options = daq.getString(f"/{device_id}/features/options")
+    elf, _ = compile_seqc(
+        sequencer_program, device_type, device_options, channel_index, sequencer="sg"
+    )
+    daq.setVector(f"/{device_id}/sgchannels/{channel_index}/awg/elf/data", elf)
 
     # wait until the device becomes ready after program upload
     wait_for_state_change(
@@ -136,7 +95,7 @@ def upload_commandtable(
     channel_index: int,
     command_table: str,
 ) -> None:
-    """Uploads a command table in the form of a string to the appropriate channel
+    """Uploads a command table in the form of a string to the appropriate channel.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -210,7 +169,6 @@ def configure_marker_and_trigger(
             sequencer. For a list of available values use
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/marker/source")
     """
-
     # Trigger input
     settings = []
     settings.append(
@@ -254,11 +212,11 @@ def configure_channel(
             be connected to this instance.
         device_id: SHFSG device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index of the used SG channel.
+        enable: Whether or not to enable the channel.
         output_range: Maximal range of the signal output power in dbM.
         center_frequency: Center Frequency before modulation.
         rflf_path: Switch between RF and LF paths.
     """
-
     path = f"/{device_id}/sgchannels/{channel_index}/"
     settings = []
 
@@ -312,7 +270,6 @@ def configure_pulse_modulation(
         sine_generator_index: Selects which sine generator to use on a given
             channel.
     """
-
     path = f"/{device_id}/sgchannels/{channel_index}/"
     settings = []
 
@@ -365,7 +322,6 @@ def configure_sine_generation(
         sine_generator_index: Selects which sine generator to use on a given
             channel.
     """
-
     path = f"/{device_id}/sgchannels/{channel_index}/sines/{sine_generator_index}/"
     settings = []
 

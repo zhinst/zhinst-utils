@@ -1,7 +1,15 @@
-"""
-Zurich Instruments LabOne Utils for the Core Python API.
-"""
+"""Zurich Instruments LabOne Utils for the Core Python API."""
 from zhinst.utils.utils import *
+from zhinst.utils import shfqa
+from zhinst.utils import shfqc
+from zhinst.utils import shfsg
+from zhinst.utils import versioning
+from zhinst.utils import shf_sweeper
+
+try:
+    from zhinst.utils._version import version as __version__
+except ModuleNotFoundError:
+    pass
 
 __all__ = [
     "utils",

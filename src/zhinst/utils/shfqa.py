@@ -1,14 +1,12 @@
-"""
-Zurich Instruments LabOne Python API Utility functions for SHFQA.
-"""
+"""Zurich Instruments LabOne Python API Utility functions for SHFQA."""
 
 import time
 
 import numpy as np
-from zhinst.utils import wait_for_state_change
-from zhinst.ziPython import AwgModule, ziDAQServer
+from zhinst.utils.utils import wait_for_state_change
+from zhinst.ziPython import AwgModule, ziDAQServer, compile_seqc
 
-SHFQA_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 4 * 2 ** 10
+SHFQA_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 4 * 2**10
 SHFQA_MAX_SIGNAL_GENERATOR_CARRIER_COUNT = 16
 SHFQA_SAMPLING_FREQUENCY = 2e9
 
@@ -22,7 +20,6 @@ def max_qubits_per_channel(daq: ziDAQServer, device_id: str) -> int:
             be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
     """
-
     return len(daq.listNodes(f"/{device_id}/qachannels/0/readout/integration/weights"))
 
 
@@ -45,12 +42,10 @@ def load_sequencer_program(
         channel_index: Index specifying to which sequencer the program below is
             uploaded - there is one sequencer per channel.
         sequencer_program: Sequencer program to be uploaded.
-        awg_module: AWG module instance used to interact with the sequencer. If
-            none is provided, a new local instance will be created.
+        awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
         timeout: Maximum time to wait for the compilation on the device in
             seconds.
     """
-
     # start by resetting the sequencer
     daq.syncSetInt(
         f"/{device_id}/qachannels/{channel_index}/generator/reset",
@@ -63,50 +58,12 @@ def load_sequencer_program(
         timeout=timeout,
     )
 
-    if awg_module is None:
-        awg_module = daq.awgModule()
-    awg_module.set("device", device_id)
-    awg_module.set("sequencertype", "qa")
-    awg_module.set("index", channel_index)
-    awg_module.execute()
-
-    t_start = time.time()
-    awg_module.set("compiler/sourcestring", sequencer_program)
-    timeout_occurred = False
-
-    # start the compilation and upload
-    compiler_status = awg_module.getInt("compiler/status")
-    while compiler_status == -1 and not timeout_occurred:
-        if time.time() - t_start > timeout:
-            # a timeout occurred
-            timeout_occurred = True
-            break
-        # wait
-        time.sleep(0.1)
-        # query new status
-        compiler_status = awg_module.getInt("compiler/status")
-
-    # check the status after compilation and upload
-    if timeout_occurred or compiler_status != 0:
-        # an info, warning or error occurred - check what it is
-        compiler_status = awg_module.getInt("compiler/status")
-        statusstring = awg_module.getString("compiler/statusstring")
-        if compiler_status == 2:
-            print(
-                f"Compiler info or warning for channel {channel_index}:\n"
-                + statusstring
-            )
-        elif timeout_occurred:
-            raise RuntimeError(
-                f"Timeout during program compilation for channel {channel_index} after \
-                    {timeout} s,\n"
-                + statusstring
-            )
-        else:
-            raise RuntimeError(
-                f"Failed to compile program for channel {channel_index},\n"
-                + statusstring
-            )
+    device_type = daq.getString(f"/{device_id}/features/devtype")
+    device_options = daq.getString(f"/{device_id}/features/options")
+    elf, _ = compile_seqc(
+        sequencer_program, device_type, device_options, channel_index, sequencer="qa"
+    )
+    daq.setVector(f"/{device_id}/qachannels/{channel_index}/generator/elf/data", elf)
 
     # wait until the device becomes ready after program upload
     wait_for_state_change(
@@ -138,6 +95,7 @@ def configure_scope(
         input_select: Keys (int) map a specific scope channel with a signal
             source (str), e.g. "channel0_signal_input". For a list of available
             values use daq.help(f"/{device_id}/scopes/0/channels/0/inputselect").
+        num_samples: Number of samples in the scope shot.
         trigger_input: Specifies the trigger source of the scope acquisition
             - if set to None, the self-triggering mode of the scope becomes
             active, which is useful e.g. for the GUI. For a list of available
@@ -204,7 +162,6 @@ def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 1.0) ->
             * scope_time (array): Relative acquisition time for each point in
                 recorded_data in seconds starting from 0.
     """
-
     # wait until scope has been triggered
     wait_for_state_change(daq, f"/{device_id}/scopes/0/enable", 0, timeout=timeout)
 
@@ -302,7 +259,7 @@ def write_to_waveform_memory(
 def start_continuous_sw_trigger(
     daq: ziDAQServer, device_id: str, *, num_triggers: int, wait_time: float
 ) -> None:
-    """Issues a specified number of software triggers
+    """Issues a specified number of software triggers.
 
     Issues a specified number of software triggers with a certain wait time in
     between. The function guarantees reception and proper processing of all
@@ -321,7 +278,6 @@ def start_continuous_sw_trigger(
         num_triggers: Number of triggers to be issued.
         wait_time: Time between triggers in seconds.
     """
-
     min_wait_time = 0.02
     wait_time = max(min_wait_time, wait_time)
     for _ in range(num_triggers):
@@ -334,8 +290,10 @@ def start_continuous_sw_trigger(
 def enable_scope(
     daq: ziDAQServer, device_id: str, *, single: int, acknowledge_timeout: float = 1.0
 ) -> None:
-    """Resets and enables the scope. Blocks until the host has received the
-    enable acknowledgment from the device.
+    """Resets and enables the scope.
+
+    Blocks until the host has received the enable acknowledgment from the
+    device.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -348,7 +306,6 @@ def enable_scope(
 
             .. versionadded:: 0.1.1
     """
-
     daq.setInt(f"/{device_id}/scopes/0/single", single)
 
     path = f"/{device_id}/scopes/0/enable"
@@ -386,7 +343,6 @@ def configure_weighted_integration(
         clear_existing: Specify whether to set all the integration weights to
             zero before proceeding with the present upload.
     """
-
     assert len(weights) > 0, "'weights' cannot be empty."
 
     integration_path = f"/{device_id}/qachannels/{channel_index}/readout/integration/"
@@ -429,7 +385,6 @@ def configure_result_logger_for_spectroscopy(
         averaging_mode: Select the averaging order of the result, with
             0 = cyclic and 1 = sequential.
     """
-
     result_path = f"/{device_id}/qachannels/{channel_index}/spectroscopy/result/"
     settings = []
 
@@ -466,7 +421,6 @@ def configure_result_logger_for_readout(
         averaging_mode: Select the averaging order of the result, with
             0 = cyclic and 1 = sequential.
     """
-
     result_path = f"/{device_id}/qachannels/{channel_index}/readout/result/"
     settings = []
 
@@ -486,8 +440,10 @@ def enable_result_logger(
     mode: str,
     acknowledge_timeout: float = 1.0,
 ) -> None:
-    """Resets and enables a specified result logger. Blocks until the host has
-    received the enable acknowledgment from the device.
+    """Resets and enables a specified result logger.
+
+    Blocks until the host has received the enable acknowledgment from the
+    device.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -502,7 +458,6 @@ def enable_result_logger(
 
             .. versionadded:: 0.1.1
     """
-
     enable_path = f"/{device_id}/qachannels/{channel_index}/{mode}/result/enable"
 
     # reset the result logger if some old measurement is still running
@@ -547,7 +502,6 @@ def get_result_logger_data(
     Returns:
         Array containing the result logger data.
     """
-
     try:
         wait_for_state_change(
             daq,
@@ -558,7 +512,8 @@ def get_result_logger_data(
     except TimeoutError as error:
         raise TimeoutError(
             "The result logger is still running. "
-            "This usually indicates that it did not receive the expected number of triggers."
+            "This usually indicates that it did not receive the expected number of "
+            "triggers."
         ) from error
 
     data = daq.get(
@@ -566,7 +521,7 @@ def get_result_logger_data(
         flat=True,
     )
 
-    result = np.array([(lambda x: x[0]["vector"])(d) for d in data.values()])
+    result = np.array([d[0]["vector"] for d in data.values()])
     return result
 
 
@@ -593,7 +548,6 @@ def configure_channel(
         center_frequency: Center Frequency of the analysis band.
         mode: Select between "spectroscopy" and "readout" mode.
     """
-
     path = f"/{device_id}/qachannels/{channel_index}/"
     settings = []
 
@@ -627,7 +581,6 @@ def configure_sequencer_triggering(
             daq.help(f"/{device_id}/qachannels/0/generator/auxtriggers/0/channel")
         play_pulse_delay: Delay in seconds before the start of waveform playback.
     """
-
     daq.setString(
         f"/{device_id}/qachannels/{channel_index}/generator/auxtriggers/0/channel",
         aux_trigger,

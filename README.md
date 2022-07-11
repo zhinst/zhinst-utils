@@ -22,7 +22,7 @@ To see the device utils in action check out the
 [LabOne API examples](https://github.com/zhinst/labone-api-examples).
 
 ## Installation
-Python 3.6+ is required.
+Python 3.7+ is required.
 ```
 pip install zhinst-utils
 ```

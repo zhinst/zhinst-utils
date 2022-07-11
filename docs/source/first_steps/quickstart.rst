@@ -17,16 +17,15 @@ all of your devices are visible.
 Session To The Data Server
 ---------------------------
 
-The device utils provide a set of helper functions to ease the use of commonly
-used device functionallities. It can not be used as a standalone package but
-rather is an addition to the LabOne python API (``ziPython``).
+The utils provide a set of helper functions to ease the use of commonly
+used functionalities. It can not be used as a standalone package but
+rather is an addition to the LabOne python API (``zhinst-core``).
 
-Each function is stateless/static. This requires every device utils function
-to have an argument for the data server session from ``ziPython`` and the serial
-of the device the function should be applied to.
+Each function is stateless/static. Meaning it either creates or operates on an 
+existing data server session from ``zhinst-core``. 
 
-The follwoing example shows how a call to the device utils function
-``shfqa.max_qubits_per_channel`` could look like for the device ``DEVXXXX``
+The follwoing example shows how a call to a device specific utils function
+``zhinst.utils.shfqa.max_qubits_per_channel`` could look like for the device ``DEVXXXX``
 connected to the dataserver running on ``localhost``.
 
 .. code-block:: python
@@ -39,4 +38,4 @@ connected to the dataserver running on ``localhost``.
     16
 
 For a complete list of all helper function provided by zhinst-utils take
-a look at the :ref:`package/zhinst.utils:Package Documentation`
+a look at the :ref:`package/utils:Package Documentation`
