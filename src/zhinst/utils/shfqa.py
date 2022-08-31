@@ -309,11 +309,12 @@ def enable_scope(
     daq.setInt(f"/{device_id}/scopes/0/single", single)
 
     path = f"/{device_id}/scopes/0/enable"
-    if daq.getInt(path) == 1:
-        daq.syncSetInt(path, 0)
-        wait_for_state_change(daq, path, 0, timeout=acknowledge_timeout)
-    daq.syncSetInt(path, 1)
-    wait_for_state_change(daq, path, 1, timeout=acknowledge_timeout)
+    if daq.getInt(path) == 1 and daq.syncSetInt(path, 0) != 0:
+        raise RuntimeError(
+            f"Failed to disable the scope for device {device_id} before enabling it."
+        )
+    if daq.syncSetInt(path, 1) != 1:
+        raise RuntimeError(f"The scope for device {device_id} could not be enabled")
 
 
 def configure_weighted_integration(
@@ -461,20 +462,15 @@ def enable_result_logger(
     enable_path = f"/{device_id}/qachannels/{channel_index}/{mode}/result/enable"
 
     # reset the result logger if some old measurement is still running
-    if daq.getInt(enable_path) != 0:
-        daq.syncSetInt(enable_path, 0)
-        wait_for_state_change(daq, enable_path, 0, timeout=acknowledge_timeout)
+    if daq.getInt(enable_path) == 1 and daq.syncSetInt(enable_path, 0) != 0:
+        raise RuntimeError(f"Failed to disable the result logger for {mode} mode.")
 
     # enable the result logger
-    daq.syncSetInt(enable_path, 1)
-
-    try:
-        wait_for_state_change(daq, enable_path, 1, timeout=acknowledge_timeout)
-    except TimeoutError as error:
-        raise TimeoutError(
+    if daq.syncSetInt(enable_path, 1) != 1:
+        raise RuntimeError(
             f"Failed to enable the result logger for {mode} mode. "
             f"Please make sure that the QA channel mode is set to {mode}."
-        ) from error
+        )
 
 
 def get_result_logger_data(
