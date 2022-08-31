@@ -1,2 +1,2 @@
-zhinst-core >= 22.02
+zhinst-core >= 22.08
 numpy >= 1.14
