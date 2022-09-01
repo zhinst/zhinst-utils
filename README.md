@@ -6,7 +6,7 @@
 # Utils for Zurich Instruments LabOne API
 
 zhinst-utils provides a set of helper functions for the native LabOne Python API
-called [zhinst.core](https://pypi.org/project/zhinst/core).
+called [zhinst.core](https://pypi.org/project/zhinst-core).
 
 It offers higher level functions to ease the communication with
 [Zurich Instruments](https://zhinst.com) devices. It is not intended to be a
