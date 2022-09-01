@@ -1,4 +1,0 @@
-sphinx
-m2r2
-sphinx_autodoc_typehints
-pydata_sphinx_theme

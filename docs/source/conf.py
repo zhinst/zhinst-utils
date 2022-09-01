@@ -33,19 +33,30 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
+    "sphinx_issues",
+    "nbsphinx",
+    "nbsphinx_link",
+    "IPython.sphinxext.ipython_console_highlighting",
     "m2r2",
     "sphinx.ext.autodoc",
-    "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
 ]
 add_module_names = False
+# Autodoc settings
 autodoc_default_options = {"show-inheritance": True}
-
+autodoc_typehints = "both"
+autodoc_typehints_format = "short"
 autosummary_generate = True
 set_type_checking_flag = False
 
+# Sphinx issues
+issues_github_path = "zhinst/zhinst-utils"
+
 # Make sure the target is unique
 autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
+
+nbsphinx_execute = "never"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -54,6 +65,11 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "**.ipynb_checkpoints"]
+
+from importlib.metadata import version
+
+version = version("zhinst.utils")
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -67,7 +83,13 @@ html_theme = "pydata_sphinx_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-html_css_files = ["css/custom.css"]
+html_css_files = ['zhinst-sphinx-theme/css/custom.css']
+
+html_theme_options = {
+    "logo": {
+        "text": "zhinst-qcodes",
+    }
+}
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -81,3 +103,15 @@ napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
+
+# nbsphinx parameters
+
+nbsphinx_codecell_lexer = "none"
+highlight_language = "none"
+
+# Spelling
+# sphinxcontrib.spelling configuration file
+spelling_word_list_filename='spelling_wordlist.txt'
+# Show suggestion in console output
+spelling_show_suggestions=False
+spelling_exclude_patterns=['examples/*.nblink', 'source/_static/zhinst-sphinx-theme/**/*']

@@ -1,5 +1,11 @@
-Zurich Instruments Utils Documentation
-==============================================
+.. image:: images/zhinst_logo_sep_horiz_2019.svg
+   :width: 400
+   :target: https://www.zhinst.com
+
+|
+
+Zurich Instruments Utils 0.1 Documentation
+=========================================================
 
 zhinst-utils provides a set of helper functions for the native LabOne Python API
 called `zhinst.core <https://pypi.org/project/zhinst/>`_.
