@@ -29,7 +29,7 @@ def test_shfqc_consistency():
         name
         for name, f in shfqc.shfqa.__dict__.items()
         if inspect.isfunction(f)
-        and f.__module__ == "zhinst.utils.shfqa"
+        and f.__module__ == "zhinst.utils.shfqa.shfqa"
         and name not in IGNORED_SHFQA
     ]
     shfsg_function_names = [
@@ -43,7 +43,7 @@ def test_shfqc_consistency():
         f
         for name, f in shfqc.__dict__.items()
         if inspect.isfunction(f)
-        and f.__module__ == "zhinst.utils.shfqc"
+        and f.__module__ == "zhinst.utils.shfqc.shfqc"
         and name not in IGNORED_SHFQC
     ]
 
@@ -64,8 +64,8 @@ def test_shfqc_consistency():
         # Patch SHFQA an SHFSG, call function and remove the called function
         # from the respective list.
         for kwargs in calls:
-            with patch("zhinst.utils.shfqc.shfqa", autospec=True) as shfqa, patch(
-                "zhinst.utils.shfqc.shfsg", autospec=True
+            with patch("zhinst.utils.shfqc.shfqc.shfqa", autospec=True) as shfqa, patch(
+                "zhinst.utils.shfqc.shfqc.shfsg", autospec=True
             ) as shfsg:
                 function(**kwargs)
                 if len(shfqa.method_calls) > 0:
