@@ -403,14 +403,11 @@ def get_qudits_results(
             continue
 
         if result_source == _ReslogSource.RESULT_OF_INTEGRATION:
-            integrator_start_idx = daq.getInt(
-                qudit_base_path + "/integrator/startindex"
-            )
-            num_states = daq.getInt(qudit_base_path + "/numstates")
-            integrator_stop_idx = integrator_start_idx + num_states - 1
-            qudits_results[qudit_idx] = results[
-                integrator_start_idx:integrator_stop_idx
+            start_idx_node = qudit_base_path + "/integrator/indexvec"
+            integrator_indices = daq.get(start_idx_node, flat=True)[start_idx_node][0][
+                "vector"
             ]
+            qudits_results[qudit_idx] = results[integrator_indices]
         elif result_source == _ReslogSource.RESULT_OF_DISCRIMINATION:
             qudits_results[qudit_idx] = results[qudit_idx].astype(int)
         else:
