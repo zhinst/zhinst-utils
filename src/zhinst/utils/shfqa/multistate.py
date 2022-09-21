@@ -2,6 +2,7 @@
 
 import typing as t
 from dataclasses import dataclass
+from enum import IntEnum
 import itertools
 import numpy as np
 import zhinst.utils.shfqa as shfqa_utils
@@ -362,13 +363,21 @@ def config_to_device(
     daq.set(transaction)
 
 
+class _ReslogSource(IntEnum):
+    """Values for the result/source node."""
+
+    RESULT_OF_INTEGRATION = 1
+    RESULT_OF_DISCRIMINATION = 3
+
+
 def get_qudits_results(
     daq: ziDAQServer, dev: str, qa_channel: int
 ) -> t.Dict[int, np.ndarray]:
     """Downloads the qudit results from the device and group them by qudit.
 
-    This function accesses the multistate nodes to determine which integrators
-    were used for which qudit to able to group the results by qudit.
+    Depending on the result logger source, this function accesses the multistate
+    nodes to determine which integrators were used for which qudit to be able to
+    group the results by qudit.
 
     Args:
         daq: An instance of the ziPython.ziDAQServer class
@@ -379,6 +388,8 @@ def get_qudits_results(
         A dictionary with the qudit index keys and result vector values.
     """
     results = shfqa_utils.get_result_logger_data(daq, dev, qa_channel, mode="readout")
+
+    result_source = daq.getInt(f"/{dev}/qachannels/{qa_channel}/readout/result/source")
 
     base_path = _get_base_path(dev, qa_channel)
 
@@ -391,11 +402,19 @@ def get_qudits_results(
         if not is_enabled:
             continue
 
-        integrator_start_idx = daq.getInt(qudit_base_path + "/integrator/startindex")
-        num_states = daq.getInt(qudit_base_path + "/numstates")
-        integrator_stop_idx = integrator_start_idx + num_states - 1
-
-        qudits_results[qudit_idx] = results[integrator_start_idx:integrator_stop_idx]
+        if result_source == _ReslogSource.RESULT_OF_INTEGRATION:
+            integrator_start_idx = daq.getInt(
+                qudit_base_path + "/integrator/startindex"
+            )
+            num_states = daq.getInt(qudit_base_path + "/numstates")
+            integrator_stop_idx = integrator_start_idx + num_states - 1
+            qudits_results[qudit_idx] = results[
+                integrator_start_idx:integrator_stop_idx
+            ]
+        elif result_source == _ReslogSource.RESULT_OF_DISCRIMINATION:
+            qudits_results[qudit_idx] = results[qudit_idx].astype(int)
+        else:
+            raise ValueError(f"Unkown result logger source: {result_source}")
 
     return qudits_results
 
