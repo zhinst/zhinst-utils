@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import time
 import textwrap
+import math
 import numpy as np
 from zhinst.utils import utils
 from zhinst.core import compile_seqc
@@ -73,6 +74,11 @@ class _TriggerSource(Enum):
 
 
 _EXTERNAL_TRIGGER_LIMIT = _TriggerSource.CHANNEL3_TRIGGER_INPUT1
+
+_SHF_SAMPLE_RATE = 2e9
+_MIN_SETTLING_TIME = 80e-9
+_MAX_PLAYZERO_CYCLES = 2**30 - 16
+_MAX_PLAYZERO_TIME = _MAX_PLAYZERO_CYCLES / _SHF_SAMPLE_RATE
 
 
 def _check_trigger_source(trigger):
@@ -225,9 +231,51 @@ def _check_output_gain(gain):
         raise ValueError(f"Output gain must be within [{min_gain}, {max_gain}].")
 
 
+def _check_settling_time(settling_time):
+    """
+    Checks whether the settling time is within the acceptable range.
+
+    Raises a ValueError exception if the checked setting was invalid.
+
+    Arguments:
+        settling_time: the settling time setting to be checked
+    """
+    if settling_time < _MIN_SETTLING_TIME:
+        raise ValueError(
+            f"Settling time {settling_time} s smaller than minimum allowed value: {_MIN_SETTLING_TIME} s!"
+        )
+
+    if settling_time > _MAX_PLAYZERO_TIME:
+        raise ValueError(
+            f"Settling time {settling_time} s greater than maximum allowed value: {_MAX_PLAYZERO_TIME} s!"
+        )
+
+
+def _check_wait_after_integration(wait_after_integration):
+    """
+    Checks whether the wait time after integration is within the acceptable range.
+
+    Raises a ValueError exception if the checked setting was invalid.
+
+    Arguments:
+        wait_after_integration: the wait time setting to be checked
+    """
+    if wait_after_integration < 0:
+        raise ValueError(
+            f"Wait time after integration {wait_after_integration} s"
+            " smaller than zero!"
+        )
+
+    if wait_after_integration > _MAX_PLAYZERO_TIME:
+        raise ValueError(
+            f"Wait time after integration {wait_after_integration} s"
+            f" greater than maximum allowed value: {_MAX_PLAYZERO_TIME} s!"
+        )
+
+
 def _check_envelope_waveform(wave_vector):
     """
-    Checks whether the suplied vector is a valid envelope waveform
+    Checks whether the suplied vector is a valid envelope waveform.
 
     Raises a ValueError exception if the checked setting was invalid.
 
@@ -370,8 +418,10 @@ class SweepConfig:
     num_points: int = 100  #: number of frequency points to measure
     mapping: str = "linear"  #: linear or logarithmic frequency axis
     oscillator_gain: float = 1  #: amplitude gain for the oscillator used for modulation
-    settling_time: float = 200e-9
+    settling_time: float = _MIN_SETTLING_TIME
     """time to wait to ensure new frequency took effect in the device under test"""
+    wait_after_integration: float = 0.0
+    """time to wait after the integration finished until the next frequency is set"""
     use_sequencer: bool = True
     """specify whether to use the fast sequencer-based sweep (True) or the slower
     host-driven sweep (False)"""
@@ -396,7 +446,7 @@ class AvgConfig:
     mode: str = "cyclic"
     """averaging mode, which can be "cyclic", to first scan the frequency and then
     repeat, or "sequential", to average each point before changing the frequency"""
-    integration_delay: float = 0.0
+    integration_delay: float = 272.0e-9
     """time delay after the trigger for the integrator to start"""
 
 
@@ -452,7 +502,7 @@ class ShfSweeper:
         self._trig = TriggerConfig()
         # the envelope multiplication is enabled if and only if this member is not None
         self._envelope = None
-        self._shf_sample_rate = 2e9
+        self._shf_sample_rate = _SHF_SAMPLE_RATE
         self._result = []
 
     def run(self):
@@ -619,6 +669,8 @@ class ShfSweeper:
             _check_in_band_freq(sweep_config.start_freq, sweep_config.stop_freq)
             _check_mapping(sweep_config.mapping)
             _check_output_gain(sweep_config.oscillator_gain)
+            _check_settling_time(sweep_config.settling_time)
+            _check_wait_after_integration(sweep_config.wait_after_integration)
         if avg_config:
             _check_avg_mode(avg_config.mode)
             self._check_integration_time(avg_config.integration_time)
@@ -1073,6 +1125,46 @@ class ShfSweeper:
         # after the sweep has finished, we unsubscribe from the node
         self._daq.unsubscribe(self._acquired_path)
 
+    @property
+    def actual_settling_time(self) -> float:
+        """Wait time between setting new frequency and triggering of integration.
+
+        Note: the granularity of this time is 16 samples (8 ns).
+        """
+        return _round_for_playzero(
+            self._sweep.settling_time,
+            sample_rate=self._shf_sample_rate,
+        )
+
+    @property
+    def actual_hold_off_time(self) -> float:
+        """Wait time after triggering the integration unit until the next cycle.
+
+        Note: the granularity of this time is 16 samples (8 ns).
+        """
+
+        # ensure safe hold-off time for the integration results to be written to the external RAM.
+        min_hold_off_time = 1032e-9
+
+        return _round_for_playzero(
+            max(
+                min_hold_off_time,
+                self._avg.integration_delay
+                + self._avg.integration_time
+                + self._sweep.wait_after_integration,
+            ),
+            sample_rate=self._shf_sample_rate,
+        )
+
+    @property
+    def predicted_cycle_time(self) -> float:
+        """Predicted duration of each cycle of the spectroscopy loop.
+
+        Note: this property only applies in self-triggered mode, which is active
+        when the trigger source is set to None and `use_sequencer` is True.
+        """
+        return self.actual_settling_time + self.actual_hold_off_time
+
     def _get_playzero_hold_off_samples(self) -> int:
         """
         Returns the hold-off time needed per iteration of the the inner-most
@@ -1082,14 +1174,8 @@ class ShfSweeper:
         Returns:
             the number of samples corresponding to the hold-off time
         """
-        hold_off_time_margin = 72e-9
-        hold_off_time = _round_for_playzero(
-            self._avg.integration_time + hold_off_time_margin, self._shf_sample_rate
-        )
 
-        # ensure minimum hold-off time for the integration
-        min_hold_off_samples = 2048
-        return max(round(hold_off_time * self._shf_sample_rate), min_hold_off_samples)
+        return round(self.actual_hold_off_time * self._shf_sample_rate)
 
     def _get_playzero_settling_samples(self) -> int:
         """
@@ -1099,10 +1185,7 @@ class ShfSweeper:
         Returns:
             the number of samples corresponding to the settling time
         """
-        return round(
-            _round_for_playzero(self._sweep.settling_time, self._shf_sample_rate)
-            * self._shf_sample_rate
-        )
+        return round(self.actual_settling_time * self._shf_sample_rate)
 
     @property
     def _freq_step(self) -> float:
@@ -1318,8 +1401,12 @@ class ShfSweeper:
     def _check_delay(self, resolution_ns, min_s, max_s, val_s):
         if val_s > max_s or val_s < min_s:
             raise ValueError(f"Delay out of bounds! {min_s} <= delay <= {max_s}")
-        if (val_s * 1e9) % resolution_ns != 0:
-            raise ValueError(f"Delay not in multiples of {resolution_ns} ns.")
+        val_ns = val_s * 1e9
+        val_ns_modulo = val_ns % resolution_ns
+        if not math.isclose(val_ns_modulo, 0.0):
+            raise ValueError(
+                f"Delay {val_ns} ns not in multiples of {resolution_ns} ns."
+            )
 
     def _check_integration_delay(self, integration_delay_s):
         resolution_ns = 2
