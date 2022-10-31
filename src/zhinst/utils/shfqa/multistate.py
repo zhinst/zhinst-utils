@@ -6,7 +6,7 @@ from enum import IntEnum
 import itertools
 import numpy as np
 import zhinst.utils.shfqa as shfqa_utils
-from zhinst.ziPython import ziDAQServer
+from zhinst.core import ziDAQServer
 
 DEVICE_MIN_STATES = 2
 DEVICE_MAX_STATES = 4
@@ -345,7 +345,7 @@ def config_to_device(
     """Configures the qudit settings to the device.
 
     Args:
-        daq: An instance of ziPython.ziDAQServer
+        daq: An instance of core.ziDAQServer
         dev: The device id.
         qa_channel: The index of the QA channel
         qudit_idx: The index of the qudit to be configured
@@ -380,7 +380,7 @@ def get_qudits_results(
     group the results by qudit.
 
     Args:
-        daq: An instance of the ziPython.ziDAQServer class
+        daq: An instance of the core.ziDAQServer class
         dev: The device id.
         qa_channels: The index of the QA channel
 

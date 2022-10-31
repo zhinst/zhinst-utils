@@ -4,7 +4,7 @@ import time
 import typing as t
 
 from zhinst.utils import convert_awg_waveform, wait_for_state_change
-from zhinst.ziPython import AwgModule, ziDAQServer, compile_seqc
+from zhinst.core import AwgModule, ziDAQServer, compile_seqc
 
 SHFSG_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 98304
 SHFSG_SAMPLING_FREQUENCY = 2e9

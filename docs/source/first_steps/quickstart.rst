@@ -30,7 +30,7 @@ connected to the dataserver running on ``localhost``.
 
 .. code-block:: python
 
-    >>> from zhinst.ziPython import ziDAQServer
+    >>> from zhinst.core import ziDAQServer
     >>> import zhinst.utils.shfqa as shfqa_utils
     >>> daq = ziDAQServer("localhost", 8004, 6)
     >>> daq.connectDevice("DEVXXXX", "1GbE")

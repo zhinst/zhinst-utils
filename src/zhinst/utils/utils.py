@@ -21,7 +21,7 @@ except ImportError as e:
     # exception when the function load_labone_mat() is called.
     __SCIPY_IMPORT_ERROR = e
 import numpy as np
-import zhinst.ziPython as zi
+import zhinst.core as zi
 
 
 def create_api_session(
@@ -54,7 +54,7 @@ def create_api_session(
       required_err_msg: Deprecated: This option will be ignored.
 
     Returns:
-      daq: An instance of the ziPython.ziDAQServer class
+      daq: An instance of the core.ziDAQServer class
         (representing an API session connected to a Data Server).
       device: The device's ID, this is the string that specifies the
         device's node branch in the data server's node tree.
@@ -198,7 +198,7 @@ def api_server_version_check(daq: zi.ziDAQServer) -> bool:
     (that the API is connected to). If the versions match return True.
 
     Args:
-      daq (ziDAQServer): An instance of the ziPython.ziDAQServer class
+      daq (ziDAQServer): An instance of the core.ziDAQServer class
         (representing an API session connected to a Data Server).
 
     Returns:
@@ -233,7 +233,7 @@ def default_output_mixer_channel(
     Based on the specified `devicetype` and `options` discovery properties and
     the hardware output channel.
 
-    This utility function is used by the ziPython examples and returns a node
+    This utility function is used by the core examples and returns a node
     available under the /devX/sigouts/0/{amplitudes,enables}/ branches.
 
     Args:
@@ -311,10 +311,10 @@ def autoDetect(daq: zi.ziDAQServer, exclude: t.List[str] = None) -> str:
 
     Return a string containing the first device ID (not in the exclude list)
     that is attached to the Data Server connected via daq, an instance of the
-    ziPython.ziDAQServer class.
+    core.ziDAQServer class.
 
     Args:
-      daq: An instance of the ziPython.ziDAQServer class
+      daq: An instance of the core.ziDAQServer class
         (representing an API session connected to a Data Server).
       exclude: A list of strings specifying devices to
         exclude. autoDetect() will not return the name of a device in this
@@ -325,7 +325,7 @@ def autoDetect(daq: zi.ziDAQServer, exclude: t.List[str] = None) -> str:
 
     Raises:
       RuntimeError: If no device was found.
-      RuntimeError: If daq is not an instance of ziPython.ziDAQServer.
+      RuntimeError: If daq is not an instance of core.ziDAQServer.
 
     Example:
       >>> zhinst.utils
@@ -333,7 +333,7 @@ def autoDetect(daq: zi.ziDAQServer, exclude: t.List[str] = None) -> str:
       >>> device = zhinst.utils.autoDetect(daq)
     """
     if not isinstance(daq, zi.ziDAQServer):
-        raise RuntimeError("First argument must be an instance of ziPython.ziDAQServer")
+        raise RuntimeError("First argument must be an instance of core.ziDAQServer")
     nodes = daq.listNodes("/", 0)
     devs = [node for node in nodes if re.match("dev*", node, re.IGNORECASE)]
     if exclude is None:
@@ -359,11 +359,11 @@ def devices(daq: zi.ziDAQServer) -> t.List[str]:
     """List of device_id of all devices connected to the Data Server.
 
     Return a list of strings containing the device IDs that are attached to the
-    Data Server connected via daq, an instance of the ziPython.ziDAQServer
+    Data Server connected via daq, an instance of the core.ziDAQServer
     class. Returns an empty list if no devices are found.
 
     Args:
-      daq: An instance of the ziPython.ziDAQServer class (representing an API
+      daq: An instance of the core.ziDAQServer class (representing an API
         session connected to a Data Server).
 
     Returns:
@@ -371,7 +371,7 @@ def devices(daq: zi.ziDAQServer) -> t.List[str]:
       are detected.
 
     Raises:
-      RuntimeError: If daq is not an instance of ziPython.ziDAQServer.
+      RuntimeError: If daq is not an instance of core.ziDAQServer.
 
     Example:
       >>> import zhinst.utils
@@ -380,7 +380,7 @@ def devices(daq: zi.ziDAQServer) -> t.List[str]:
 
     """
     if not isinstance(daq, zi.ziDAQServer):
-        raise RuntimeError("First argument must be an instance of ziPython.ziDAQServer")
+        raise RuntimeError("First argument must be an instance of core.ziDAQServer")
     nodes = daq.listNodes("/", 0)
     devs = [node for node in nodes if re.match("dev*", node, re.IGNORECASE)]
     return list(x.lower() for x in list(devs))
@@ -404,7 +404,7 @@ def autoConnect(default_port: int = None, api_level: int = None) -> zi.ziDAQServ
         Level 1, Level 5 is recommended for UHF and MFLI devices (default=None).
 
     Returns:
-      ziDAQServer: An instance of the ziPython.ziDAQServer class that is used
+      ziDAQServer: An instance of the core.ziDAQServer class that is used
         for communication to the Data Server.
 
     Raises:
@@ -536,7 +536,7 @@ def sigin_autorange(daq: zi.ziDAQServer, device: str, in_channel: int) -> float:
       e.g., UHFLI, MFLI, MFIA.
 
     Args:
-      daq: A ziPython API session.
+      daq: A core API session.
       device: The device ID on which to perform the signal input autorange.
       in_channel: The index of the signal input channel to autorange.
 
@@ -589,7 +589,7 @@ def get_default_settings_path(daq: zi.ziDAQServer) -> str:
     """Return the default path used for settings by the ziDeviceSettings module.
 
     Args:
-      daq: A ziPython API session.
+      daq: A core API session.
 
     Returns:
       settings_path: The default ziDeviceSettings path.
@@ -607,7 +607,7 @@ def load_settings(daq: zi.ziDAQServer, device: str, filename: str) -> None:
     finished.
 
     Args:
-      daq: A ziPython API session.
+      daq: A core API session.
       device: The device ID specifying where to load the settings,
       e.g., 'dev123'.
       filename: The filename of the xml settings file to load. The filename can
@@ -658,7 +658,7 @@ def save_settings(daq: zi.ziDAQServer, device: str, filename: str) -> None:
     finished.
 
     Args:
-      daq: A ziPython API session.
+      daq: A core API session.
       device: The device ID specifying where to load the settings,
       e.g., 'dev123'.
       filename: The filename of the LabOne xml settings file. The filename
@@ -1071,7 +1071,7 @@ def disable_everything(daq: zi.ziDAQServer, device: str) -> t.List[t.Tuple[str, 
     disable all extended functionality; disable all streaming nodes.
 
     Args:
-        daq: An instance of the ziPython.ziDAQServer class
+        daq: An instance of the core.ziDAQServer class
             (representing an API session connected to a Data Server).
         device: The device ID specifying where to load the settings,
             e.g., 'dev123'.
@@ -1312,7 +1312,7 @@ def wait_for_state_change(
     Attention: Only supports integer values as reference.
 
     Args:
-        daq: A ziPython API session.
+        daq: A core API session.
         node: Path of the node.
         value: expected value.
         timeout: max in seconds. (default = 1.0)
@@ -1345,7 +1345,7 @@ def assert_node_changes_to_expected_value(
     of polls an assertion error is issued.
 
     Args:
-      daq: A ziPython API session.
+      daq: A core API session.
       node: path of the node that should change to expected value
       expected_value: value the node is expected to change to
       sleep_time: time in seconds to wait between requesting th value

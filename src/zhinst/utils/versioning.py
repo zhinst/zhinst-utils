@@ -4,14 +4,14 @@ from inspect import getfile
 from re import match
 from functools import wraps
 
-import zhinst.ziPython
+import zhinst.core
 
 
 def minimum_version(min_version):
-    """Parameterized decorator to enforce a minimum ziPython version.
+    """Parameterized decorator to enforce a minimum core version.
 
     Args:
-        min_version (str): ziPython version with format MAJOR.MINOR or
+        min_version (str): core version with format MAJOR.MINOR or
             MAJOR.MINOR.BUILD
 
     Example:
@@ -32,13 +32,13 @@ def minimum_version(min_version):
         min_major, min_minor, min_build = map(int, min_version.split("."))
     else:
         raise Exception(
-            f"Wrong ziPython version format: {min_version}. Supported format: "
+            f"Wrong core version format: {min_version}. Supported format: "
             "MAJOR.MINOR or MAJOR.MINOR.BUILD",
         )
 
     def decorate(function):
 
-        installed_version = zhinst.ziPython.__version__
+        installed_version = zhinst.core.__version__
         major, minor, build = map(int, installed_version.split("."))
 
         not_supported = (min_major, min_minor, min_build) > (major, minor, build)
@@ -50,7 +50,7 @@ def minimum_version(min_version):
                 *_, file_name = getfile(function).split("/")
                 raise Exception(
                     f'Function "{function.__name__}" from file "{file_name}" '
-                    f"requires ziPython version {min_version} or higher (current: "
+                    f"requires core version {min_version} or higher (current: "
                     f"{installed_version}). Please visit the Zurich Instruments "
                     "website to update."
                 )

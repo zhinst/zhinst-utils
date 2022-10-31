@@ -12,7 +12,7 @@ called `zhinst.core <https://pypi.org/project/zhinst/>`_.
 
 It offers higher level functions to ease the communication with
 `Zurich Instruments <https://zhinst.com>`_ devices. It is not intended to be a
-seperate layer above ``zhinst.ziPython`` but rather as a addition.
+seperate layer above ``zhinst.core`` but rather as a addition.
 
 Apart for a set of generic, not device specific functions the utility also provide
 specific functionality for some devices. Currently including:

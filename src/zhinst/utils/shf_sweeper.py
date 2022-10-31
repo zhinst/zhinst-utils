@@ -10,7 +10,7 @@ import time
 import textwrap
 import numpy as np
 from zhinst.utils import utils
-from zhinst.ziPython import compile_seqc
+from zhinst.core import compile_seqc
 
 
 class _Mapping(Enum):
@@ -326,7 +326,7 @@ def _is_subscribed(daq, node_path: str) -> bool:
     Checks whether the daq instance is subscribed to a given node or not
 
     Arguments:
-        daq (ziDAQServer):  an instance of the ziPython.ziDAQServer class
+        daq (ziDAQServer):  an instance of the core.ziDAQServer class
         node_path:          the path of the node to be checked
 
     Returns:
@@ -348,7 +348,7 @@ def _subscribe_with_assert(daq, node_path: str) -> bool:
     Raises an AssertionError if the node was already subscribed
 
     Arguments:
-        daq (ziDAQServer):  an instance of the ziPython.ziDAQServer class
+        daq (ziDAQServer):  an instance of the core.ziDAQServer class
         node_path:          the path of the node to be checked
     """
     assert not _is_subscribed(daq, node_path), (
@@ -437,7 +437,7 @@ class ShfSweeper:
     Class to set up and run a sweep on an SHFQA
 
     Arguments:
-        daq (zhinst.ziPython.ziDAQServer):
+        daq (zhinst.core.ziDAQServer):
             ziDAQServer object to communicate with a Zurich Instruments data server
         dev (str):
             The ID of the device to run the sweeper with. For example, `dev12004`.

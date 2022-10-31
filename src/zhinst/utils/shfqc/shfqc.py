@@ -1,6 +1,6 @@
 """Zurich Instruments LabOne Python API Utility functions for SHFQC."""
 import numpy as np
-from zhinst.ziPython import AwgModule, ziDAQServer
+from zhinst.core import AwgModule, ziDAQServer
 
 from zhinst.utils import shfqa, shfsg
 
