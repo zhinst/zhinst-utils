@@ -3,6 +3,7 @@
 ## Version 0.1.3
 * Docs: Updated documentation to display `zhinst.core` instead of `zhinst.ziPython`
 * Increased `DeprecationWarning` stack level when importing `zhinst.deviceutils`
+* ShfSweeper: Add configurable wait time after integration
 
 ## Version 0.1.2
 * SHFQA: in the multistate.get_qudits_results() function,
