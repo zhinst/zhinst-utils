@@ -901,11 +901,11 @@ class ShfSweeper:
         if self._avg.mode == _AveragingMode.CYCLIC.value:
             # Cyclic averaging
             return self._sweep.start_freq + self._freq_step * (
-                num_acquired % self._sweep.num_points
+                (num_acquired - 1) % self._sweep.num_points
             )
         # Sequential averaging
         return self._sweep.start_freq + self._freq_step * (
-            num_acquired // self._avg.num_averages
+            (num_acquired - 1) // self._avg.num_averages
         )
 
     def _poll_results(
@@ -1192,7 +1192,9 @@ class ShfSweeper:
         """
         Returns the frequency step size according to the sweep settings
         """
-        return (self._sweep.stop_freq - self._sweep.start_freq) / self._sweep.num_points
+        return (self._sweep.stop_freq - self._sweep.start_freq) / (
+            self._sweep.num_points - 1
+        )
 
     def _generate_sequencer_program(self):
         """
