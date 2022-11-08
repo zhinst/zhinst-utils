@@ -10,7 +10,7 @@ import time
 import textwrap
 import math
 import numpy as np
-from zhinst.utils import utils
+from zhinst.utils import utils, shfqa
 from zhinst.core import compile_seqc
 
 
@@ -854,7 +854,9 @@ class ShfSweeper:
         if self._sweep.use_sequencer:
             self._configure_triggering_via_sequencer()
             sequencer_program = self._generate_sequencer_program()
-            self._load_sequencer_program(sequencer_program)
+            shfqa.load_sequencer_program(
+                self._daq, self._dev, self._rf.channel, sequencer_program
+            )
         else:
             self._configure_direct_triggering_host()
 
@@ -864,9 +866,8 @@ class ShfSweeper:
         """
         Stops the result logger and makes sure it is stopped
         """
-        self._daq.setInt(self._spec_enable_path, 0)
-        self._daq.sync()
-        utils.wait_for_state_change(self._daq, self._spec_enable_path, 0)
+        if self._daq.syncSetInt(self._spec_enable_path, 0) == 1:
+            raise RuntimeError("The result logger could not be stopped")
 
     def _issue_single_sw_trigger(self):
         self._daq.syncSetInt(f"/{self._dev}/system/swtriggers/0/single", 1)
@@ -1263,37 +1264,6 @@ class ShfSweeper:
         )
 
         return seqc
-
-    def _load_sequencer_program(self, sequencer_program: str, timeout: float = 10):
-        """
-        Compiles and loads a sequencer program for the fast sweep"
-
-        Arguments:
-            sequencer_program:  the sequencer program to be compiled and loaded
-            timeout:            the maximum time to wait during compilation in seconds
-        """
-
-        # first, reset the sequencer
-        self._daq.syncSetInt(self._path_prefix + "generator/reset", 1)
-
-        device_type = self._daq.getString(f"/{self._dev}/features/devtype")
-        device_options = self._daq.getString(f"/{self._dev}/features/options")
-        elf, _ = compile_seqc(
-            sequencer_program,
-            device_type,
-            device_options,
-            self._rf.channel,
-            sequencer="qa",
-        )
-        self._daq.setVector(
-            f"/{self._dev}/qachannels/{self._rf.channel}/generator/elf/data", elf
-        )
-
-        # wait until the device becomes ready after program upload
-        utils.wait_for_state_change(
-            self._daq, self._path_prefix + "generator/ready", 1, timeout=1.0
-        )
-        time.sleep(0.1)
 
     def _enable_sequencer(self):
         """

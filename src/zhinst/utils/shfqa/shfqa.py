@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 from zhinst.utils.utils import wait_for_state_change
-from zhinst.core import AwgModule, ziDAQServer, compile_seqc
+from zhinst.core import ziDAQServer, compile_seqc
 
 SHFQA_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 4 * 2**10
 SHFQA_MAX_SIGNAL_GENERATOR_CARRIER_COUNT = 16
@@ -28,11 +28,16 @@ def load_sequencer_program(
     device_id: str,
     channel_index: int,
     sequencer_program: str,
-    *,
-    awg_module: AwgModule = None,
-    timeout: float = 10,
+    **_,
 ) -> None:
     """Compiles and loads a program to a specified sequencer.
+
+    This function is composed of 4 steps:
+        1. Reset the generator to ensure a clean state.
+        2. Compile the sequencer program with the offline complier.
+        3. Upload the compiled binary elf file.
+        4. Validate that the upload was successful and the generator is ready
+           again.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -42,36 +47,31 @@ def load_sequencer_program(
         channel_index: Index specifying to which sequencer the program below is
             uploaded - there is one sequencer per channel.
         sequencer_program: Sequencer program to be uploaded.
-        awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
-        timeout: Maximum time to wait for the compilation on the device in
-            seconds.
+
+    Raises:
+        RuntimeError: If the Upload was not successfully or the device could not
+        process the sequencer program.
     """
-    # start by resetting the sequencer
+    # Start by resetting the sequencer.
     daq.syncSetInt(
         f"/{device_id}/qachannels/{channel_index}/generator/reset",
         1,
     )
-    wait_for_state_change(
-        daq,
-        f"/{device_id}/qachannels/{channel_index}/generator/ready",
-        0,
-        timeout=timeout,
-    )
-
+    # Compile the sequencer program.
     device_type = daq.getString(f"/{device_id}/features/devtype")
     device_options = daq.getString(f"/{device_id}/features/options")
     elf, _ = compile_seqc(
         sequencer_program, device_type, device_options, channel_index, sequencer="qa"
     )
+    # Upload the binary elf file to the device.
     daq.setVector(f"/{device_id}/qachannels/{channel_index}/generator/elf/data", elf)
-
-    # wait until the device becomes ready after program upload
-    wait_for_state_change(
-        daq,
+    # Validate that the upload was successful and the generator is ready again.
+    if not daq.get(
         f"/{device_id}/qachannels/{channel_index}/generator/ready",
-        1,
-        timeout=timeout,
-    )
+    ):
+        raise RuntimeError(
+            "The device did not not switch to into the ready state after the upload."
+        )
 
 
 def configure_scope(

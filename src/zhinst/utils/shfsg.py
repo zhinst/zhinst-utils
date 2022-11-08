@@ -1,10 +1,8 @@
 """Zurich Instruments LabOne Python API Utility functions for SHFSG."""
-
-import time
 import typing as t
 
-from zhinst.utils import convert_awg_waveform, wait_for_state_change
-from zhinst.core import AwgModule, ziDAQServer, compile_seqc
+from zhinst.utils import convert_awg_waveform
+from zhinst.core import ziDAQServer, compile_seqc
 
 SHFSG_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 98304
 SHFSG_SAMPLING_FREQUENCY = 2e9
@@ -15,11 +13,16 @@ def load_sequencer_program(
     device_id: str,
     channel_index: int,
     sequencer_program: str,
-    *,
-    awg_module: AwgModule = None,
-    timeout: float = 10,
+    **_,
 ) -> None:
     """Compiles and loads a program to a specified AWG core.
+
+    This function is composed of 4 steps:
+        1. Reset the awg core to ensure a clean state.
+        2. Compile the sequencer program with the offline complier.
+        3. Upload the compiled binary elf file.
+        4. Validate that the upload was successful and the awg core is ready
+           again.
 
     Args:
         daq: Instance of a Zurich Instruments API session connected to a Data
@@ -29,36 +32,23 @@ def load_sequencer_program(
         channel_index: Index specifying which sequencer to upload - there
             is one sequencer per channel.
         sequencer_program: Sequencer program to be uploaded.
-        awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
-        timeout: maximum time to wait for the compilation in seconds.
-            (default = 10)
+
+    Raises:
+        RuntimeError: If the Upload was not successfully or the device could not
+        process the sequencer program.
     """
     # start by resetting the sequencer
-    daq.syncSetInt(
-        f"/{device_id}/sgchannels/{channel_index}/awg/reset",
-        1,
-    )
-    wait_for_state_change(
-        daq,
-        f"/{device_id}/sgchannels/{channel_index}/awg/ready",
-        0,
-        timeout=timeout,
-    )
-
+    daq.syncSetInt(f"/{device_id}/sgchannels/{channel_index}/awg/reset", 1)
     device_type = daq.getString(f"/{device_id}/features/devtype")
     device_options = daq.getString(f"/{device_id}/features/options")
     elf, _ = compile_seqc(
         sequencer_program, device_type, device_options, channel_index, sequencer="sg"
     )
     daq.setVector(f"/{device_id}/sgchannels/{channel_index}/awg/elf/data", elf)
-
-    # wait until the device becomes ready after program upload
-    wait_for_state_change(
-        daq,
-        f"/{device_id}/sgchannels/{channel_index}/awg/ready",
-        1,
-        timeout=timeout,
-    )
+    if not daq.get(f"/{device_id}/sgchannels/{channel_index}/awg/ready"):
+        raise RuntimeError(
+            "The device did not not switch to into the ready state after the upload."
+        )
 
 
 def enable_sequencer(
@@ -84,9 +74,11 @@ def enable_sequencer(
         sequencer_path + "single",
         int(single),
     )
-    daq.syncSetInt(sequencer_path + "enable", 1)
-    hundred_milliseconds = 0.1
-    time.sleep(hundred_milliseconds)
+    if not daq.syncSetInt(sequencer_path + "enable", 1):
+        raise RuntimeError(
+            "The sequencer could not be enabled. Please ensure that the "
+            "sequencer program is loaded and configured correctly."
+        )
 
 
 def upload_commandtable(
