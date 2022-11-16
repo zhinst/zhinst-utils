@@ -446,7 +446,7 @@ class AvgConfig:
     mode: str = "cyclic"
     """averaging mode, which can be "cyclic", to first scan the frequency and then
     repeat, or "sequential", to average each point before changing the frequency"""
-    integration_delay: float = 272.0e-9
+    integration_delay: float = 224.0e-9
     """time delay after the trigger for the integrator to start"""
 
 
@@ -584,11 +584,11 @@ class ShfSweeper:
 
     def configure(
         self,
-        sweep_config=None,
-        avg_config=None,
-        rf_config=None,
-        trig_config=None,
-        envelope_config=None,
+        sweep_config: SweepConfig = None,
+        avg_config: AvgConfig = None,
+        rf_config: RfConfig = None,
+        trig_config: TriggerConfig = None,
+        envelope_config: EnvelopeConfig = None,
     ):
         """
         Configure and check the settings
@@ -1375,7 +1375,7 @@ class ShfSweeper:
             raise ValueError(f"Delay out of bounds! {min_s} <= delay <= {max_s}")
         val_ns = val_s * 1e9
         val_ns_modulo = val_ns % resolution_ns
-        if not math.isclose(val_ns_modulo, 0.0):
+        if not math.isclose(val_ns_modulo, 0.0, abs_tol=1e-3):
             raise ValueError(
                 f"Delay {val_ns} ns not in multiples of {resolution_ns} ns."
             )
