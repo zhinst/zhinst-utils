@@ -5,6 +5,7 @@ from zhinst.utils import shfqc
 from zhinst.utils import shfsg
 from zhinst.utils import versioning
 from zhinst.utils import shf_sweeper
+from zhinst.utils import feedback_model
 
 try:
     from zhinst.utils._version import version as __version__
@@ -40,5 +41,6 @@ __all__ = [
     "shfqa",
     "shfqc",
     "shfsg",
+    "feedback_model",
     "versioning",
 ]
