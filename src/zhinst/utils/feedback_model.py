@@ -156,7 +156,7 @@ class QCCSFeedbackModel:
             if index <= self.description.initial_steps:
                 return model[index - 1]
 
-            index -= self.description.initial_steps
+            index -= self.description.initial_steps + 1
             lat_full_periods = (
                 index // self.description.period_steps
             ) * self.description.latency_in_period_step  # latency from full periods
