@@ -425,6 +425,8 @@ class SweepConfig:
     use_sequencer: bool = True
     """specify whether to use the fast sequencer-based sweep (True) or the slower
     host-driven sweep (False)"""
+    psd: bool = False
+    """specify whether to compute the Power Spectral Density (PSD)"""
 
 
 @dataclass
@@ -540,7 +542,7 @@ class ShfSweeper:
         props["mapping"] = self._sweep.mapping
         return data
 
-    def plot(self):
+    def plot(self, input_impedance_ohm: float = 50.0):
         """
         Plots power over frequency for last sweep
         """
@@ -548,19 +550,37 @@ class ShfSweeper:
 
         freq = self.get_offset_freq_vector()
         freq_mhz = freq / 1e6
+
         data = self.get_result()
-        power_dbm = utils.volt_rms_to_dbm(data["vector"])
-        phase = np.unwrap(np.angle(data["vector"]))
-        fig, axs = plt.subplots(2, sharex=True)
+        if self._sweep.psd:
+
+            y_data = 10 * np.log10(np.real(data["vector"]) * 1e3 / input_impedance_ohm)
+            y_label = "power spectral density [dBm / Hz]"
+        else:
+            y_data = utils.volt_rms_to_dbm(
+                data["vector"], input_impedance_ohm=input_impedance_ohm
+            )
+            y_label = "power [dBm]"
+
+        num_subplots = 1 if self._sweep.psd else 2
+        fig, axs = plt.subplots(num_subplots, sharex=True)
+        if num_subplots == 1:
+            # Note: plt.subplots doesn't return a list of axes when only one subplot is requested
+            # but in the subsequent code we expect it to be a list - thus we create one here.
+            axs = [axs]
+
         plt.xlabel("freq [MHz]")
 
-        axs[0].plot(freq_mhz, power_dbm)
-        axs[0].set(ylabel="power [dBm]")
+        axs[0].plot(freq_mhz, y_data)
+        axs[0].set(ylabel=y_label)
         axs[0].grid()
 
-        axs[1].plot(freq_mhz, phase)
-        axs[1].set(ylabel="phase [rad]")
-        axs[1].grid()
+        if not self._sweep.psd:
+            phase = np.unwrap(np.angle(data["vector"]))
+            # Plot the phase only for non-psd measurments
+            axs[1].plot(freq_mhz, phase)
+            axs[1].set(ylabel="phase [rad]")
+            axs[1].grid()
 
         fig.suptitle(f"Sweep with center frequency {self._rf.center_freq / 1e9}GHz")
         plt.show()
@@ -580,6 +600,7 @@ class ShfSweeper:
         self._configure_envelope()
         self._configure_spectroscopy_delay()
         self._configure_integration_time()
+        self._configure_psd()
         self._daq.sync()
 
     def configure(
@@ -767,6 +788,13 @@ class ShfSweeper:
         """
         spectroscopy_len = round(self._avg.integration_time * self._shf_sample_rate)
         self._daq.setInt(self._path_prefix + "spectroscopy/length", spectroscopy_len)
+
+    def _configure_psd(self):
+        """
+        Configures the Power Spectral Density feature
+        """
+        enable_value = 1 if self._sweep.psd else 0
+        self._daq.setInt(self._path_prefix + "spectroscopy/psd/enable", enable_value)
 
     def _get_freq_vec_host(self):
         """
