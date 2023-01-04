@@ -12,6 +12,7 @@ import math
 import numpy as np
 from zhinst.utils import utils, shfqa
 from zhinst.core import compile_seqc
+import typing as t
 
 
 class _Mapping(Enum):
@@ -431,7 +432,7 @@ class SweepConfig:
 
 @dataclass
 class RfConfig:
-    """RF in- and ouput settings for a sweep"""
+    """RF in- and output settings for a sweep"""
 
     channel: int = 0  #: device channel to be used
     input_range: int = -5  #: maximal Range of the Signal Input power
@@ -507,7 +508,7 @@ class ShfSweeper:
         self._shf_sample_rate = _SHF_SAMPLE_RATE
         self._result = []
 
-    def run(self):
+    def run(self) -> t.Dict[str, t.Any]:
         """
         Perform a sweep with the specified settings.
 
@@ -518,16 +519,17 @@ class ShfSweeper:
         /{dev}/qachannels/{rf.channel}/spectroscopy/result/data/wave
 
         Returns:
-            a dictionary with measurement data of the sweep
+            A dictionary with measurement data of the sweep
         """
         self._init_sweep()
         self._run_freq_sweep()
         return self.get_result()
 
-    def get_result(self):
-        """
+    def get_result(self) -> t.Dict[str, t.Any]:
+        """Get the result of the sweep.
+
         Returns:
-            a dictionary with measurement data of the last sweep
+            A dictionary with measurement data of the last sweep.
         """
         data = self._get_result_logger_data()
         vec = self._result
@@ -640,10 +642,11 @@ class ShfSweeper:
         # multiplication will be disabled. Hence no "or" statement is used here.
         self._envelope = envelope_config
 
-    def get_configuration(self):
-        """
+    def get_configuration(self) -> Config:
+        """Get the current configuration.
+
         Returns:
-            the configuration of the sweeper class as
+            The configuration of the sweeper class as
             Config(SweepConfig, AvgConfig, RfConfig, TriggerConfig)
         """
         return Config(self._sweep, self._avg, self._rf, self._trig)

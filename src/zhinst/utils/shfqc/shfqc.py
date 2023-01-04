@@ -38,7 +38,7 @@ def load_sequencer_program(
             uploaded - there is one sequencer per channel. (Always 0 for the
             qa channel)
         sequencer_program: Sequencer program to be uploaded.
-        channel_type: Identifier specifing if the sequencer from the qa or sg
+        channel_type: Identifier specifying if the sequencer from the qa or sg
             channel should be used. ("qa" or "sg")
         awg_module: The standalone AWG compiler is used instead. .. deprecated:: 22.08
         timeout: Maximum time to wait for the compilation on the device in
@@ -86,7 +86,7 @@ def enable_sequencer(
             sequencer per channel. (Always 0 for the qa channel)
         single: 1 - Disable sequencer after finishing execution.
                 0 - Restart sequencer after finishing execution.
-        channel_type: Identifier specifing if the sequencer from the qa or sg
+        channel_type: Identifier specifying if the sequencer from the qa or sg
             channel should be used. ("qa" or "sg")
     """
     if channel_type == "qa":
@@ -129,7 +129,7 @@ def write_to_waveform_memory(
         waveforms: Dictionary of waveforms, the key specifies the slot to which
             to write the value which is a complex array containing the waveform
             samples.
-        channel_type: Identifier specifing if the waveforms should be uploaded
+        channel_type: Identifier specifying if the waveforms should be uploaded
             to the qa or sg channel. ("qa" or "sg")
         clear_existing: Specify whether to clear the waveform memory before the
             present upload. (Only used when channel_type is "qa"!)

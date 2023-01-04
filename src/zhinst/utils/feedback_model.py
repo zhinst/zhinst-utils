@@ -1,14 +1,15 @@
 """Feedback Data Latency model for PQSC, SHF- and HDAWG systems.
 
 Typical usage example:
-
-    model = QCCSFeedbackModel(
-        description=get_feedback_system_description(
-            generator_type=SGType.HDAWG,
-            analyzer_type=QAType.SHFQA,
-            pqsc_mode=PQSCMode.DECODER
-        )
+```python
+model = QCCSFeedbackModel(
+    description=get_feedback_system_description(
+        generator_type=SGType.HDAWG,
+        analyzer_type=QAType.SHFQA,
+        pqsc_mode=PQSCMode.DECODER
     )
+)
+```
 """
 from dataclasses import dataclass
 from enum import IntEnum
@@ -53,7 +54,7 @@ class QCCSSystemDescription:
     """[(clock cycles, steps),...] The pattern of periodic
     latency increments with respect to integration sample increments """
     period_steps: int = 50
-    """[steps] Period of the latency incement pattern."""
+    """[steps] Period of the latency increment pattern."""
     latency_in_period_step: int = 25
     """[clock cycles] Latency increment for a full period."""
 
@@ -71,8 +72,7 @@ def get_feedback_system_description(
       A QCCS system description object to be used in a QCCSFeedbackModel object.
 
     Raises:
-      ValueError: Incorrect values for 'generator_type',
-      'analyzer_type' or 'pqsc_mode'.
+      ValueError: Incorrect values for 'generator_type', 'analyzer_type' or 'pqsc_mode'.
     """
     if analyzer_type not in [QAType.SHFQA, QAType.SHFQC]:
         raise ValueError(f"Unknown quantum analyzer type ({analyzer_type})")
@@ -129,7 +129,7 @@ class QCCSFeedbackModel:
         """Provide the expected latency relative to the integration length.
 
         Args:
-          Integration length in samples
+          length: Integration length in samples
 
         Returns:
           The expected latency in AWG clock cycles

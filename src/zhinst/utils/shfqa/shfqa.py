@@ -34,7 +34,7 @@ def load_sequencer_program(
 
     This function is composed of 4 steps:
         1. Reset the generator to ensure a clean state.
-        2. Compile the sequencer program with the offline complier.
+        2. Compile the sequencer program with the offline compiler.
         3. Upload the compiled binary elf file.
         4. Validate that the upload was successful and the generator is ready
            again.
@@ -50,7 +50,7 @@ def load_sequencer_program(
 
     Raises:
         RuntimeError: If the Upload was not successfully or the device could not
-        process the sequencer program.
+            process the sequencer program.
     """
     # Start by resetting the sequencer.
     daq.syncSetInt(

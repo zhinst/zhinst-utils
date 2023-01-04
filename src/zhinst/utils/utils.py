@@ -328,9 +328,11 @@ def autoDetect(daq: zi.ziDAQServer, exclude: t.List[str] = None) -> str:
       RuntimeError: If daq is not an instance of core.ziDAQServer.
 
     Example:
-      >>> zhinst.utils
-      >>> daq = zhinst.utils.autoConnect()
-      >>> device = zhinst.utils.autoDetect(daq)
+    ```python
+    import zhinst.utils
+    daq = zhinst.utils.autoConnect()
+    device = zhinst.utils.autoDetect(daq)
+    ```
     """
     if not isinstance(daq, zi.ziDAQServer):
         raise RuntimeError("First argument must be an instance of core.ziDAQServer")
@@ -374,10 +376,11 @@ def devices(daq: zi.ziDAQServer) -> t.List[str]:
       RuntimeError: If daq is not an instance of core.ziDAQServer.
 
     Example:
-      >>> import zhinst.utils
-      >>> daq = zhinst.utils.autoConnect()  # autoConnect not supported for MFLI devices
-      >>> device = zhinst.utils.autoDetect(daq)
-
+    ```python
+    import zhinst.utils
+    daq = zhinst.utils.autoConnect()  # autoConnect not supported for MFLI devices
+    device = zhinst.utils.autoDetect(daq)
+    ```
     """
     if not isinstance(daq, zi.ziDAQServer):
         raise RuntimeError("First argument must be an instance of core.ziDAQServer")
@@ -550,11 +553,13 @@ def sigin_autorange(daq: zi.ziDAQServer, device: str, in_channel: int) -> float:
         timeout.
 
     Example:
-      >>> import zhinst.utils
-      >>> device_serial = 'dev2006'
-      >>> (daq, _, _) = zhinst.utils.create_api_session(device_serial, 5)
-      >>> input_channel = 0
-      >>> zhinst.utils.sigin_autorange(daq, device_serial, input_channel)
+    ```python
+    import zhinst.utils
+    device_serial = 'dev2006'
+    (daq, _, _) = zhinst.utils.create_api_session(device_serial, 5)
+    input_channel = 0
+    zhinst.utils.sigin_autorange(daq, device_serial, input_channel)
+    ```
     """
     autorange_path = "/{}/sigins/{}/autorange".format(device, in_channel)
     assert any(
@@ -589,7 +594,7 @@ def get_default_settings_path(daq: zi.ziDAQServer) -> str:
     """Return the default path used for settings by the ziDeviceSettings module.
 
     Args:
-      daq: A core API session.
+        daq: A core API session.
 
     Returns:
       settings_path: The default ziDeviceSettings path.
@@ -608,24 +613,25 @@ def load_settings(daq: zi.ziDAQServer, device: str, filename: str) -> None:
 
     Args:
       daq: A core API session.
-      device: The device ID specifying where to load the settings,
-      e.g., 'dev123'.
+      device: The device ID specifying where to load the settings, e.g., 'dev123'.
       filename: The filename of the xml settings file to load. The filename can
-      include a relative or full path.
+        include a relative or full path.
 
     Raises:
       RuntimeError: If loading the settings times out.
 
     Examples:
-      >>> import zhinst.utils as utils
-      >>> daq = utils.autoConnect()
-      >>> dev = utils.autoDetect(daq)
-      >>> # Then, e.g., load settings from a file in the current directory:
-      >>> utils.load_settings(daq, dev, 'my_settings.xml')
-      >>> # Then, e.g., load settings from the default LabOne settings path:
-      >>> filename = 'default_ui.xml'
-      >>> path = utils.get_default_settings_path(daq)
-      >>> utils.load_settings(daq, dev, path + os.sep + filename)
+    ```python
+    import zhinst.utils as utils
+    daq = utils.autoConnect()
+    dev = utils.autoDetect(daq)
+    # Then, e.g., load settings from a file in the current directory:
+    utils.load_settings(daq, dev, 'my_settings.xml')
+    # Then, e.g., load settings from the default LabOne settings path:
+    filename = 'default_ui.xml'
+    path = utils.get_default_settings_path(daq)
+    utils.load_settings(daq, dev, path + os.sep + filename)
+    ```
     """
     path, filename = os.path.split(filename)
     filename_noext = os.path.splitext(filename)[0]
@@ -659,26 +665,27 @@ def save_settings(daq: zi.ziDAQServer, device: str, filename: str) -> None:
 
     Args:
       daq: A core API session.
-      device: The device ID specifying where to load the settings,
-      e.g., 'dev123'.
+      device: The device ID specifying where to load the settings, e.g., 'dev123'.
       filename: The filename of the LabOne xml settings file. The filename
-      can include a relative or full path.
+        can include a relative or full path.
 
     Raises:
       RuntimeError: If saving the settings times out.
 
     Examples:
-      import zhinst.utils as utils
-      daq = utils.autoConnect()
-      dev = utils.autoDetect(daq)
+    ```python
+    import zhinst.utils as utils
+    daq = utils.autoConnect()
+    dev = utils.autoDetect(daq)
 
-      # Then, e.g., save settings to a file in the current directory:
-      utils.save_settings(daq, dev, 'my_settings.xml')
+    # Then, e.g., save settings to a file in the current directory:
+    utils.save_settings(daq, dev, 'my_settings.xml')
 
-      # Then, e.g., save settings to the default LabOne settings path:
-      filename = 'my_settings_example.xml'
-      path = utils.get_default_settings_path(daq)
-      utils.save_settings(daq, dev, path + os.sep + filename)
+    # Then, e.g., save settings to the default LabOne settings path:
+    filename = 'my_settings_example.xml'
+    path = utils.get_default_settings_path(daq)
+    utils.save_settings(daq, dev, path + os.sep + filename)
+    ```
     """
     path, filename = os.path.split(filename)
     filename_noext = os.path.splitext(filename)[0]
@@ -740,8 +747,8 @@ def load_labone_demod_csv(
 
     Args:
       fname: The file or filename of the CSV file to load.
-      column_names (list or tuple of str, optional): A list (or tuple) of column
-      names to load from the CSV file. Default is to load all columns.
+      column_names: A list (or tuple) of column names to load from the CSV
+        file. Default is to load all columns.
 
     Returns:
       sample: A numpy structured array of shape (num_points,)
@@ -749,13 +756,15 @@ def load_labone_demod_csv(
       CSV file. num_points is the number of lines in the CSV file - 1.
 
     Example:
-      >>> import zhinst.utils
-      >>> sample = zhinst.utils.load_labone_demod_csv(
-      >>>   'dev2004_demods_0_sample_00000.csv',
-      >>>   ('timestamp', 'x', 'y'))
-      >>> import matplotlib.pyplot as plt
-      >>> import numpy as np
-      >>> plt.plot(sample['timestamp'], np.abs(sample['x'] + 1j*sample['y']))
+    ```python
+    import zhinst.utils
+    sample = zhinst.utils.load_labone_demod_csv(
+      'dev2004_demods_0_sample_00000.csv',
+      ('timestamp', 'x', 'y'))
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.plot(sample['timestamp'], np.abs(sample['x'] + 1j*sample['y']))
+    ```
     """
     assert set(column_names).issubset(
         LABONE_DEMOD_NAMES
@@ -777,7 +786,7 @@ def load_labone_csv(fname: str) -> np.ndarray:
     Interface into a numpy structured array.
 
     Args:
-      filename: The filename of the CSV file to load.
+      fname: The filename of the CSV file to load.
 
     Returns:
       A numpy structured array of shape (num_points,) whose field names
@@ -785,12 +794,14 @@ def load_labone_csv(fname: str) -> np.ndarray:
       num_points is the number of lines in the CSV file - 1.
 
     Example:
-      >>> import zhinst.utils
-      >>> # Load the CSV file of PID error data (node: /dev2004/pids/0/error)
-      >>> data = zhinst.utils.load_labone_csv('dev2004_pids_0_error_00000.csv')
-      >>> import matplotlib.pyplot as plt
-      >>> # Plot the error
-      >>> plt.plot(data['timestamp'], data['value'])
+    ```python
+    import zhinst.utils
+    # Load the CSV file of PID error data (node: /dev2004/pids/0/error)
+    data = zhinst.utils.load_labone_csv('dev2004_pids_0_error_00000.csv')
+    import matplotlib.pyplot as plt
+    # Plot the error
+    plt.plot(data['timestamp'], data['value'])
+    ```
     """
     data = np.genfromtxt(fname, delimiter=";", dtype=None, names=True)
     return data
@@ -833,17 +844,19 @@ def load_labone_mat(filename: str) -> t.Dict:
       http://docs.scipy.org/doc/scipy/reference/tutorial/io.html#matlab-structs
 
     Example:
-      >>> device = 'dev88'
-      >>> # See ``Further explanation`` above for a comment on the indexing:
-      >>> timestamp = data[device][0,0]['demods'][0,0]['sample'][0,0]['timestamp'][0]
-      >>> x = data[device][0,0]['demods'][0,0]['sample'][0,0]['x'][0]
-      >>> y = data[device][0,0]['demods'][0,0]['sample'][0,0]['y'][0]
-      >>> import matplotlib.pyplot as plt
-      >>> import numpy as np
-      >>> plt.plot(timestamp, np.abs(x + 1j*y))
-      >>> # If multiple demodulator's are saved, data from the second demodulator,
-      >>> # e.g., is accessed as following:
-      >>> x = data[device][0,0]['demods'][0,1]['sample'][0,0]['x'][0]
+    ```python
+    device = 'dev88'
+    # See ``Further explanation`` above for a comment on the indexing:
+    timestamp = data[device][0,0]['demods'][0,0]['sample'][0,0]['timestamp'][0]
+    x = data[device][0,0]['demods'][0,0]['sample'][0,0]['x'][0]
+    y = data[device][0,0]['demods'][0,0]['sample'][0,0]['y'][0]
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.plot(timestamp, np.abs(x + 1j*y))
+    # If multiple demodulator's are saved, data from the second demodulator,
+    # e.g., is accessed as following:
+    x = data[device][0,0]['demods'][0,1]['sample'][0,0]['x'][0]
+    ```
     """
     try:
         data = scipy.io.loadmat(filename)
@@ -883,11 +896,13 @@ def load_zicontrol_csv(
       sample. num_points is the number of lines in the CSV file - 1.
 
     Example:
-      >>> import zhinst.utils
-      >>> import matplotlib.plt as plt
-      >>> import numpy as np
-      >>> sample = zhinst.utils.load_labone_csv('Freq1.csv', ('t', 'x', 'y'))
-      >>> plt.plot(sample['t'], np.abs(sample['x'] + 1j*sample['y']))
+    ```python
+    import zhinst.utils
+    import matplotlib.plt as plt
+    import numpy as np
+    sample = zhinst.utils.load_labone_csv('Freq1.csv', ('t', 'x', 'y'))
+    plt.plot(sample['t'], np.abs(sample['x'] + 1j*sample['y']))
+    ```
     """
     assert set(column_names).issubset(
         ZICONTROL_NAMES
@@ -924,11 +939,13 @@ def load_zicontrol_zibin(
         num_points is the number of sample points saved in the file.
 
     Example:
-        >>> import zhinst.utils
-        >>> sample = zhinst.utils.load_zicontrol_zibin('Freq1.ziBin')
-        >>> import matplotlib.plt as plt
-        >>> import numpy as np
-        >>> plt.plot(sample['t'], np.abs(sample['x'] + 1j*sample['y']))
+    ```python
+    import zhinst.utils
+    sample = zhinst.utils.load_zicontrol_zibin('Freq1.ziBin')
+    import matplotlib.plt as plt
+    import numpy as np
+    plt.plot(sample['t'], np.abs(sample['x'] + 1j*sample['y']))
+    ```
     """
     assert set(column_names).issubset(
         ZICONTROL_NAMES
@@ -961,7 +978,7 @@ def check_for_sampleloss(timestamps: np.ndarray) -> np.ndarray:
     changed.
 
     Args:
-      timestamp: a 1-dimensional array containing demodulator timestamps
+      timestamps: a 1-dimensional array containing demodulator timestamps
 
     Returns:
       A 1-dimensional array indicating the indices in timestamp where
@@ -991,7 +1008,7 @@ def check_for_sampleloss(timestamps: np.ndarray) -> np.ndarray:
 def bwtc_scaling_factor(order: int) -> float:
     """Return the appropriate scaling factor for bandwidth to timeconstant.
 
-    Converstion for the provided demodulator order.
+    Conversion for the provided demodulator order.
 
     Args:
         order: demodulator order.
@@ -1037,7 +1054,7 @@ def tc2bw(timeconstant: float, order: int) -> float:
     Args:
       timeconstant: The equivalent demodulator timeconstant.
       order: The demodulator order (1 to 8) for which to convert the
-      bandwidth.
+        bandwidth.
 
     Returns:
       The demodulator 3dB bandwidth to convert.
@@ -1253,14 +1270,14 @@ def convert_awg_waveform(
 def parse_awg_waveform(
     wave_uint: np.ndarray, channels: int = 1, markers_present: bool = False
 ) -> t.Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Covert a native AWG waveform into the individual waves.
+    """Convert a native AWG waveform into the individual waves.
 
     Converts a received waveform from the AWG waveform node into floating point
     and separates its contents into the respective waves (2 waveform waves and 1
     marker wave), depending on the input.
 
     Args:
-      wave: A uint16 array from the AWG waveform node.
+      wave_uint: A uint16 array from the AWG waveform node.
       channels: Number of channels present in the wave.
       markers_present: Indicates if markers are interleaved in the wave.
 
@@ -1385,6 +1402,6 @@ def volt_rms_to_dbm(
       input_impedance_ohm: The input impedance in Ohm
 
     Returns:
-      The power in dBm corrsponding to the volt_rms argument is returned.
+      The power in dBm corresponding to the volt_rms argument is returned.
     """
     return 10 * np.log10((np.abs(volt_rms) ** 2) * 1e3 / input_impedance_ohm)
