@@ -356,7 +356,7 @@ def configure_weighted_integration(
     for integration_unit, weight in weights.items():
         settings.append((integration_path + f"weights/{integration_unit}/wave", weight))
 
-    integration_length = len(weights[0])
+    integration_length = len(next(iter(weights.values())))
     settings.append((integration_path + "length", integration_length))
     settings.append((integration_path + "delay", integration_delay))
 
