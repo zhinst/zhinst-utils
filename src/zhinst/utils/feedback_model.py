@@ -81,29 +81,29 @@ def get_feedback_system_description(
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_smpl=96,
-                initial_steps=6,
-                pattern=[(4, 8), (4, 8), (4, 9), (5, 8), (4, 8), (4, 9)],
+                initial_steps=4,
+                pattern=[(4, 8), (4, 9), (5, 8), (4, 8), (4, 9), (4, 8)],
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
                 initial_latency_smpl=100,
-                initial_steps=7,
-                pattern=[(4, 9), (4, 8), (5, 8), (4, 9), (4, 8), (4, 8)],
+                initial_steps=6,
+                pattern=[(4, 8), (5, 8), (4, 9), (4, 8), (4, 8), (4, 9)],
             )
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
 
     if generator_type in [SGType.SHFSG, SGType.SHFQC]:
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
-                initial_latency_smpl=91,
-                initial_steps=6,
-                pattern=[(5, 8), (3, 8), (5, 9), (5, 8), (2, 8), (5, 9)],
+                initial_latency_smpl=85,
+                initial_steps=4,
+                pattern=[(5, 8), (3, 9), (5, 8), (5, 8), (2, 9), (5, 8)],
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
-                initial_latency_smpl=96,
-                initial_steps=7,
-                pattern=[(3, 9), (5, 8), (5, 8), (2, 9), (5, 8), (5, 8)],
+                initial_latency_smpl=90,
+                initial_steps=6,
+                pattern=[(3, 8), (5, 8), (5, 9), (2, 8), (5, 8), (5, 9)],
             )
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
 
