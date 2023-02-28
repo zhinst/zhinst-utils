@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.2
+* ShfSweeper: New Setting for PSD
+* Shfqa: Fix writing of weights vectors if index zero is absent.
+* Adapt feedback latency model for LabOne 23.02 
+
 ## Version 0.1.5
 * ShfSweeper: Fixed a bug where delay settings would be wrongly rejected as "Delay ... ns not in multiples of 2 ns" due to numerical precision.
 * ShfSweeper: Changed the default value of the integration delay to 224 ns to better match the digital and analog delay when directly looping back the analog output to the analog input.
