@@ -40,6 +40,13 @@ class PQSCMode(IntEnum):
     DECODER = 2
 
 
+class FeedbackPath(IntEnum):
+    """Different handling of feedback data from the PQSC."""
+
+    ZSYNC = 1
+    INTERNAL = 3
+
+
 @dataclass
 class QCCSSystemDescription:
     """Describe the behavior of a QCCS system with respect to feedback latency."""
@@ -60,24 +67,45 @@ class QCCSSystemDescription:
 
 
 def get_feedback_system_description(
-    generator_type: SGType, analyzer_type: QAType, pqsc_mode: PQSCMode
+    generator_type: SGType,
+    analyzer_type: QAType,
+    pqsc_mode: PQSCMode = None,
+    feedback_path: FeedbackPath = FeedbackPath.ZSYNC,
 ) -> QCCSSystemDescription:
     """Returns a QCCSSysDescription object for a given configuration.
 
     Args:
       generator_type: Signal generator used (SHFSG/HDAWG).
       pqsc_mode: Mode of operation for the PQSC.
+      feedback_path: Used only when the generator type is SHFQC to select
+                     between local feedback or through PQSC
 
     Returns:
       A QCCS system description object to be used in a QCCSFeedbackModel object.
 
     Raises:
-      ValueError: Incorrect values for 'generator_type', 'analyzer_type' or 'pqsc_mode'.
+      ValueError: Incorrect values for 'generator_type', 'analyzer_type',
+                  'pqsc_mode' or 'feedback_path'.
     """
     if analyzer_type not in [QAType.SHFQA, QAType.SHFQC]:
         raise ValueError(f"Unknown quantum analyzer type ({analyzer_type})")
 
+    if (
+        pqsc_mode in [PQSCMode.DECODER, PQSCMode.REGISTER_FORWARD]
+        and feedback_path is FeedbackPath.INTERNAL
+    ):
+        raise ValueError(
+            (
+                f"PQSC mode ({pqsc_mode}) incompatible ",
+                f"with selected feedback path ({feedback_path})",
+            )
+        )
+
     if generator_type is SGType.HDAWG:
+        if feedback_path == FeedbackPath.INTERNAL:
+            raise ValueError(
+                "Internal Feedback can only be used with generator=SGType.SHFQC"
+            )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_smpl=96,
@@ -93,6 +121,27 @@ def get_feedback_system_description(
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
 
     if generator_type in [SGType.SHFSG, SGType.SHFQC]:
+        if feedback_path is FeedbackPath.INTERNAL:
+            if generator_type != SGType.SHFQC:
+                raise ValueError(
+                    "Internal Feedback can only be used with generator=SGType.SHFQC"
+                )
+            if analyzer_type != QAType.SHFQC:
+                raise ValueError(
+                    "Internal Feedback can only be used with analyzer=QAType.SHFQC"
+                )
+            if pqsc_mode is not None:
+                raise ValueError(
+                    (
+                        "Internal Feedback can't be used with ",
+                        f"the selected pqsc mode ({pqsc_mode})",
+                    )
+                )
+            return QCCSSystemDescription(
+                initial_latency_smpl=24,
+                initial_steps=1,
+                pattern=[(1, 2)] * 25,
+            )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_smpl=85,
@@ -105,6 +154,7 @@ def get_feedback_system_description(
                 initial_steps=6,
                 pattern=[(3, 8), (5, 8), (5, 9), (2, 8), (5, 8), (5, 9)],
             )
+
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
 
     raise ValueError(f"Unknown signal generator type ({generator_type})")
