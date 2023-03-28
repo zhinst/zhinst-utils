@@ -1,9 +1,15 @@
 # Changelog
 
+## Version 0.3
+
+* Added a function to get status flags of devices. New module `zhinst.utils.device_status` includes `DeviceStatusFlag` Enum and `get_device_statuses()`.
+* Added a function `zhinst.utils.api_compatiblity.check_dataserver_device_compatibility()` to check LabOne DataServer and devices firmware compatibility.
+The function raises `zhinst.utils.exceptions.CompatibilityError` if incompatibilities are found.
+
 ## Version 0.2
 * ShfSweeper: New Setting for PSD
 * Shfqa: Fix writing of weights vectors if index zero is absent.
-* Adapt feedback latency model for LabOne 23.02 
+* Adapt feedback latency model for LabOne 23.02.
 
 ## Version 0.1.5
 * ShfSweeper: Fixed a bug where delay settings would be wrongly rejected as "Delay ... ns not in multiples of 2 ns" due to numerical precision.
