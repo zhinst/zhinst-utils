@@ -87,7 +87,7 @@ html_css_files = ["zhinst-sphinx-theme/css/custom.css"]
 
 html_theme_options = {
     "logo": {
-        "text": "zhinst-qcodes",
+        "text": "zhinst-utils",
     }
 }
 

@@ -2,9 +2,11 @@
 
 ## Version 0.3
 
+* Feedback model now supports SHFQC internal feedback.
 * Added a function to get status flags of devices. New module `zhinst.utils.device_status` includes `DeviceStatusFlag` Enum and `get_device_statuses()`.
 * Added a function `zhinst.utils.api_compatiblity.check_dataserver_device_compatibility()` to check LabOne DataServer and devices firmware compatibility.
 The function raises `zhinst.utils.exceptions.CompatibilityError` if incompatibilities are found.
+
 
 ## Version 0.2
 * ShfSweeper: New Setting for PSD

@@ -27,7 +27,7 @@ class SGType(IntEnum):
 
 
 class QAType(IntEnum):
-    """Different qauntum analyzer types used in a QCCS setup."""
+    """Different quantum analyzer types used in a QCCS setup."""
 
     SHFQA = 1
     SHFQC = 2
@@ -41,7 +41,10 @@ class PQSCMode(IntEnum):
 
 
 class FeedbackPath(IntEnum):
-    """Different handling of feedback data from the PQSC."""
+    """Different handling of feedback data from the PQSC.
+
+    .. versionadded:: 0.3
+    """
 
     ZSYNC = 1
     INTERNAL = 3
@@ -76,16 +79,21 @@ def get_feedback_system_description(
 
     Args:
       generator_type: Signal generator used (SHFSG/HDAWG).
+      analyzer_type: Quantum analyzer used.
       pqsc_mode: Mode of operation for the PQSC.
       feedback_path: Used only when the generator type is SHFQC to select
                      between local feedback or through PQSC
 
     Returns:
-      A QCCS system description object to be used in a QCCSFeedbackModel object.
+      A QCCS system description object to be used in a `QCCSFeedbackModel` object.
 
     Raises:
       ValueError: Incorrect values for 'generator_type', 'analyzer_type',
                   'pqsc_mode' or 'feedback_path'.
+
+    .. versionchanged:: 0.3
+
+        Added `feedback_path` argument.
     """
     if analyzer_type not in [QAType.SHFQA, QAType.SHFQC]:
         raise ValueError(f"Unknown quantum analyzer type ({analyzer_type})")
