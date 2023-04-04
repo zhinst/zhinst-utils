@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.3.1
+
+* Add internal trigger to SHFQA sweeper class.
+
 ## Version 0.3
 
 * Feedback model now supports SHFQC internal feedback.
