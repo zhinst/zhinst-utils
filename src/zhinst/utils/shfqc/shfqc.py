@@ -195,7 +195,7 @@ def configure_scope(
     )
 
 
-def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 1.0) -> tuple:
+def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 5.0) -> tuple:
     """Queries the scope for data once it is finished.
 
     Args:
