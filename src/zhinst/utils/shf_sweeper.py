@@ -487,6 +487,7 @@ class EnvelopeConfig:
 
 Config = namedtuple("Config", ["sweep", "avg", "rf", "trig"])
 
+
 # pylint: disable=too-many-instance-attributes
 class ShfSweeper:
     """
@@ -525,20 +526,24 @@ class ShfSweeper:
             A dictionary with measurement data of the sweep
         """
         self._init_sweep()
-        self._run_freq_sweep()
-        return self.get_result()
+        maybe_data = self._run_freq_sweep()
+        return self.get_result(data=maybe_data)
 
-    def get_result(self) -> t.Dict[str, t.Any]:
+    def get_result(self, data=None) -> t.Dict[str, t.Any]:
         """Get the result of the sweep.
+
+        Args:
+            data (dict): optional data. If not provided, the data is fetched
+                from the device.
 
         Returns:
             A dictionary with measurement data of the last sweep.
         """
-        data = self._get_result_logger_data()
-        vec = self._result
+        if data is None:
+            data = self._get_result_logger_data()
+            data["vector"] = self._result
         if not self._sweep.use_sequencer:
-            vec = self._average_samples(vec)
-        data["vector"] = vec
+            data["vector"] = self._average_samples(data["vector"])
         props = data["properties"]
         props["centerfreq"] = self._rf.center_freq
         props["startfreq"] = self._sweep.start_freq
@@ -558,7 +563,6 @@ class ShfSweeper:
 
         data = self.get_result()
         if self._sweep.psd:
-
             y_data = 10 * np.log10(np.real(data["vector"]) * 1e3 / input_impedance_ohm)
             y_label = "power spectral density [dBm / Hz]"
         else:
@@ -909,7 +913,7 @@ class ShfSweeper:
     def _enable_measurement(self):
         self._daq.syncSetInt(self._spec_enable_path, 1)
 
-    def _get_data_after_measurement(self):
+    def _get_vector_after_measurement(self):
         data = self._get_result_logger_data()
         return data["vector"]
 
@@ -986,7 +990,7 @@ class ShfSweeper:
                 elapsed_time_since_result += poll_duration
 
             if data_path in poll_results:
-                result_logger_data = poll_results[data_path][0]["vector"]
+                result_logger_data = poll_results[data_path][0]
 
             if elapsed_time_since_print >= print_interval:
                 _print_sweep_progress(
@@ -1084,19 +1088,18 @@ class ShfSweeper:
             sleep_time=0.02,
         )
 
-    def _run_freq_sweep(self):
+    def _run_freq_sweep(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Runs the frequency sweep.
         Dispatches between the different sweep approaches.
         """
         if self._sweep.use_sequencer:
-            self._run_freq_sweep_sequencer()
-        elif self._is_sw_triggered:
-            self._run_freq_sweep_host_sw_trig()
-        else:
-            self._run_freq_sweep_host()
+            return self._run_freq_sweep_sequencer()
+        if self._is_sw_triggered:
+            return self._run_freq_sweep_host_sw_trig()
+        return self._run_freq_sweep_host()
 
-    def _run_freq_sweep_sequencer(self):
+    def _run_freq_sweep_sequencer(self) -> t.Dict[str, t.Any]:
         """
         Runs the frequency sweep with the sequencer-based approach.
         """
@@ -1108,14 +1111,16 @@ class ShfSweeper:
         self._enable_measurement()
         self._enable_sequencer()
         try:
-            self._result = self._poll_results(
+            result_logger_data = self._poll_results(
                 self._data_path, self._acquired_path, num_results
             )
+            self._result = result_logger_data["vector"]
         finally:
             self._daq.unsubscribe(self._data_path)
             self._daq.unsubscribe(self._acquired_path)
+        return result_logger_data
 
-    def _run_freq_sweep_host_sw_trig(self):
+    def _run_freq_sweep_host_sw_trig(self) -> t.Dict[str, t.Any]:
         """
         Runs the frequency sweep with the host-based approach using the software trigger
         """
@@ -1133,9 +1138,11 @@ class ShfSweeper:
             )
 
         utils.wait_for_state_change(self._daq, self._spec_enable_path, 0, timeout=1.0)
-        self._result = self._get_data_after_measurement()
+        data = self._get_result_logger_data()
+        self._result = data["vector"]
+        return data
 
-    def _run_freq_sweep_host(self):
+    def _run_freq_sweep_host(self) -> None:
         """
         Runs the frequency sweep with the host-based approach (not software-triggered)
         """
@@ -1155,7 +1162,7 @@ class ShfSweeper:
                 self._daq.unsubscribe(self._acquired_path)
                 raise wait_exception
 
-            self._result = np.append(self._result, self._get_data_after_measurement())
+            self._result = np.append(self._result, self._get_vector_after_measurement())
 
         # after the sweep has finished, we unsubscribe from the node
         self._daq.unsubscribe(self._acquired_path)
