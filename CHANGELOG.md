@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.3.2
+
+* Increase default timeout for get_scope_data
+* Avoid duplicate fetching of results in shf_sweeper.
+
 ## Version 0.3.1
 
 * Add internal trigger to SHFQA sweeper class.
