@@ -67,6 +67,9 @@ class QCCSSystemDescription:
     """[steps] Period of the latency increment pattern."""
     latency_in_period_step: int = 25
     """[clock cycles] Latency increment for a full period."""
+    rtlogger_correction: int = 0
+    """[clock_cycles] Correction needed on top of the RTLogger recorded
+    latency to get the latency seen by the sequencer"""
 
 
 def get_feedback_system_description(
@@ -117,14 +120,16 @@ def get_feedback_system_description(
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_smpl=96,
-                initial_steps=4,
-                pattern=[(4, 8), (4, 9), (5, 8), (4, 8), (4, 9), (4, 8)],
+                initial_steps=5,
+                pattern=[(4, 9), (4, 8), (4, 8), (4, 9), (5, 8), (4, 8)],
+                rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
                 initial_latency_smpl=100,
-                initial_steps=6,
-                pattern=[(4, 8), (5, 8), (4, 9), (4, 8), (4, 8), (4, 9)],
+                initial_steps=7,
+                pattern=[(4, 8), (4, 9), (4, 8), (5, 8), (4, 9), (4, 8)],
+                rtlogger_correction=2,
             )
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
 
@@ -146,21 +151,23 @@ def get_feedback_system_description(
                     )
                 )
             return QCCSSystemDescription(
-                initial_latency_smpl=24,
+                initial_latency_smpl=23,
                 initial_steps=1,
                 pattern=[(1, 2)] * 25,
             )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
-                initial_latency_smpl=85,
-                initial_steps=4,
-                pattern=[(5, 8), (3, 9), (5, 8), (5, 8), (2, 9), (5, 8)],
+                initial_latency_smpl=91,
+                initial_steps=5,
+                pattern=[(3, 9), (5, 8), (5, 8), (2, 9), (5, 8), (5, 8)],
+                rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
-                initial_latency_smpl=90,
-                initial_steps=6,
-                pattern=[(3, 8), (5, 8), (5, 9), (2, 8), (5, 8), (5, 9)],
+                initial_latency_smpl=94,
+                initial_steps=7,
+                pattern=[(5, 8), (5, 9), (2, 8), (5, 8), (5, 9), (3, 8)],
+                rtlogger_correction=2,
             )
 
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
@@ -230,4 +237,4 @@ class QCCSFeedbackModel:
 
         latency_clk = f_calculate_cycles()
 
-        return latency_clk
+        return latency_clk + self.description.rtlogger_correction
