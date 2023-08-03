@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.3.3
+
+* Adapt feedback latency model for LabOne 23.06
+  * Add `rtlogger_correction` to `QCCSSystemDescription`
+  * Modify default values of `QCCSSystemDescription`
+
 ## Version 0.3.2
 
 * Increase default timeout for get_scope_data
