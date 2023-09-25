@@ -1,9 +1,15 @@
 """Zurich Instruments LabOne Python API Utility functions for SHFQA."""
 
 import time
+from functools import partial
+import typing as t
 
 import numpy as np
 from zhinst.utils.utils import wait_for_state_change
+from zhinst.utils.auto_generate_functions import (
+    configure_maker,
+    build_docstring_configure,
+)
 from zhinst.core import ziDAQServer, compile_seqc
 
 SHFQA_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 4 * 2**10
@@ -74,8 +80,7 @@ def load_sequencer_program(
         )
 
 
-def configure_scope(
-    daq: ziDAQServer,
+def get_scope_settings(
     device_id: str,
     *,
     input_select: dict,
@@ -84,13 +89,15 @@ def configure_scope(
     num_segments: int = 1,
     num_averages: int = 1,
     trigger_delay: float = 0.0,
-) -> None:
-    """Configures the scope for a measurement.
+) -> t.List[t.Tuple[str, t.Any]]:
+    """Provides a list of settings for the scope for a measurement.
+
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_scope', which will also apply the settings on the device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         input_select: Keys (int) map a specific scope channel with a signal
             source (str), e.g. "channel0_signal_input". For a list of available
@@ -109,22 +116,14 @@ def configure_scope(
             data acquisition and reception of a trigger.
     """
     scope_path = f"/{device_id}/scopes/0/"
-    settings = []
+    settings = [
+        (scope_path + "segments/count", num_segments),
+        (scope_path + "segments/enable", 1 if num_segments > 1 else 0),
+        (scope_path + "averaging/enable", 1 if num_segments > 1 else 0),
+        (scope_path + "averaging/count", num_averages),
+        (scope_path + "channels/*/enable", 0),
+    ]
 
-    settings.append((scope_path + "segments/count", num_segments))
-    if num_segments > 1:
-        settings.append((scope_path + "segments/enable", 1))
-    else:
-        settings.append((scope_path + "segments/enable", 0))
-
-    if num_averages > 1:
-        settings.append((scope_path + "averaging/enable", 1))
-    else:
-        settings.append((scope_path + "averaging/enable", 0))
-
-    settings.append((scope_path + "averaging/count", num_averages))
-
-    settings.append((scope_path + "channels/*/enable", 0))
     for channel, selected_input in input_select.items():
         settings.append(
             (scope_path + f"channels/{channel}/inputselect", selected_input)
@@ -140,7 +139,16 @@ def configure_scope(
 
     settings.append((scope_path + "length", num_samples))
 
-    daq.set(settings)
+    return settings
+
+
+configure_scope = configure_maker(
+    get_scope_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="Configures the scope for a measurement.",
+    ),
+)
 
 
 def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 5.0) -> tuple:
@@ -363,21 +371,23 @@ def configure_weighted_integration(
     daq.set(settings)
 
 
-def configure_result_logger_for_spectroscopy(
-    daq: ziDAQServer,
+def get_result_logger_for_spectroscopy_settings(
     device_id: str,
     channel_index: int,
     *,
     result_length: int,
     num_averages: int = 1,
     averaging_mode: int = 0,
-) -> None:
-    """Configures a specified result logger for spectroscopy mode.
+) -> t.List[t.Tuple[str, int]]:
+    """Provides a list of settings for a specified result logger for spectroscopy mode.
+
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_result_logger_for_spectroscopy', which will also apply the settings on
+    the device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index specifying which result logger to configure - there
             is one result logger per channel.
@@ -387,17 +397,25 @@ def configure_result_logger_for_spectroscopy(
             0 = cyclic and 1 = sequential.
     """
     result_path = f"/{device_id}/qachannels/{channel_index}/spectroscopy/result/"
-    settings = []
+    settings = [
+        (result_path + "length", result_length),
+        (result_path + "averages", num_averages),
+        (result_path + "mode", averaging_mode),
+    ]
 
-    settings.append((result_path + "length", result_length))
-    settings.append((result_path + "averages", num_averages))
-    settings.append((result_path + "mode", averaging_mode))
-
-    daq.set(settings)
+    return settings
 
 
-def configure_result_logger_for_readout(
-    daq: ziDAQServer,
+configure_result_logger_for_spectroscopy = configure_maker(
+    get_result_logger_for_spectroscopy_settings,
+    partial(
+        build_docstring_configure,
+        "Configures a specified result logger for " "spectroscopy mode.",
+    ),
+)
+
+
+def get_result_logger_for_readout_settings(
     device_id: str,
     channel_index: int,
     *,
@@ -405,13 +423,16 @@ def configure_result_logger_for_readout(
     result_length: int,
     num_averages: int = 1,
     averaging_mode: int = 0,
-) -> None:
-    """Configures a specified result logger for readout mode.
+) -> t.List[t.Tuple[str, t.Union[int, str, object]]]:
+    """Provides a list of settings for a specified result logger for readout mode.
+
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_result_logger_for_readout', which will also apply the settings on the
+    device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index specifying which result logger to configure - there
             is one result logger per channel.
@@ -423,14 +444,23 @@ def configure_result_logger_for_readout(
             0 = cyclic and 1 = sequential.
     """
     result_path = f"/{device_id}/qachannels/{channel_index}/readout/result/"
-    settings = []
+    settings = [
+        (result_path + "length", result_length),
+        (result_path + "averages", num_averages),
+        (result_path + "source", result_source),
+        (result_path + "mode", averaging_mode),
+    ]
 
-    settings.append((result_path + "length", result_length))
-    settings.append((result_path + "averages", num_averages))
-    settings.append((result_path + "source", result_source))
-    settings.append((result_path + "mode", averaging_mode))
+    return settings
 
-    daq.set(settings)
+
+configure_result_logger_for_readout = configure_maker(
+    get_result_logger_for_readout_settings,
+    partial(
+        build_docstring_configure,
+        "Configures a specified result logger for " "readout mode.",
+    ),
+)
 
 
 def enable_result_logger(
@@ -521,8 +551,7 @@ def get_result_logger_data(
     return result
 
 
-def configure_channel(
-    daq: ziDAQServer,
+def get_channel_settings(
     device_id: str,
     channel_index: int,
     *,
@@ -530,13 +559,16 @@ def configure_channel(
     output_range: int,
     center_frequency: float,
     mode: str,
-) -> None:
-    """Configures the RF input and output of a specified channel.
+) -> t.List[t.Tuple[str, t.Union[int, float, str, object]]]:
+    """Provides a list of settings for the RF input and output of a specified channel.
+
+    This function only gathers all node settings and does not apply the values on the
+    device.
+    It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling 'configure_channel',
+    which will also apply the settings on the device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index specifying which channel to configure.
         input_range: Maximal range of the signal input power in dbM.
@@ -545,30 +577,40 @@ def configure_channel(
         mode: Select between "spectroscopy" and "readout" mode.
     """
     path = f"/{device_id}/qachannels/{channel_index}/"
-    settings = []
+    settings = [
+        (path + "input/range", input_range),
+        (path + "output/range", output_range),
+        (path + "centerfreq", center_frequency),
+        (path + "mode", mode),
+    ]
 
-    settings.append((path + "input/range", input_range))
-    settings.append((path + "output/range", output_range))
-    settings.append((path + "centerfreq", center_frequency))
-    settings.append((path + "mode", mode))
-
-    daq.set(settings)
+    return settings
 
 
-def configure_sequencer_triggering(
-    daq: ziDAQServer,
+configure_channel = configure_maker(
+    get_channel_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="Configures the RF input and output of a specified channel.",
+    ),
+)
+
+
+def get_sequencer_triggering_settings(
     device_id: str,
     channel_index: int,
     *,
     aux_trigger: str,
     play_pulse_delay: float = 0.0,
-) -> None:
-    """Configures the triggering of a specified sequencer.
+) -> t.List[t.Tuple[str, t.Union[str, float, object]]]:
+    """Provides a list of settings for the triggering of a specified sequencer.
+
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_sequencer_triggering', which will also apply the settings on the device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index specifying on which sequencer to configure the
             triggering - there is one sequencer per channel.
@@ -577,11 +619,24 @@ def configure_sequencer_triggering(
             daq.help(f"/{device_id}/qachannels/0/generator/auxtriggers/0/channel")
         play_pulse_delay: Delay in seconds before the start of waveform playback.
     """
-    daq.setString(
-        f"/{device_id}/qachannels/{channel_index}/generator/auxtriggers/0/channel",
-        aux_trigger,
-    )
-    daq.setDouble(
-        f"/{device_id}/qachannels/{channel_index}/generator/delay",
-        play_pulse_delay,
-    )
+    settings = [
+        (
+            f"/{device_id}/qachannels/{channel_index}/generator/auxtriggers/0/channel",
+            aux_trigger,
+        ),
+        (
+            f"/{device_id}/qachannels/{channel_index}/generator/delay",
+            play_pulse_delay,
+        ),
+    ]
+
+    return settings
+
+
+configure_sequencer_triggering = configure_maker(
+    get_sequencer_triggering_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="Configures the triggering of a specified sequencer.",
+    ),
+)

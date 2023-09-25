@@ -43,4 +43,5 @@ __all__ = [
     "shfsg",
     "feedback_model",
     "versioning",
+    "auto_generate_functions",
 ]

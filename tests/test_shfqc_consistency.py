@@ -6,20 +6,32 @@ from copy import copy
 # Function in zhinst.utils.shfqc not imported from another module
 IGNORED_SHFQC = []
 # Function in zhinst.utils.shfqa not ported to zhinst.utils.shfqc
-IGNORED_SHFQA = []
+IGNORED_SHFQA = [
+    name
+    for name, f in shfqc.shfqa.__dict__.items()
+    if inspect.isfunction(f)
+    and f.__module__ == "zhinst.utils.shfqa.shfqa"
+    and name.endswith("_settings")
+]
 # Function in zhinst.utils.shfsg not ported to zhinst.utils.shfqc
-IGNORED_SHFSG = []
+IGNORED_SHFSG = [
+    name
+    for name, f in shfqc.shfsg.__dict__.items()
+    if inspect.isfunction(f)
+    and f.__module__ == "zhinst.utils.shfsg"
+    and name.endswith("_settings")
+]
 
 
 def test_shfqc_consistency():
     """Test if the SHFQC device utils are consistent with SHFQA/SHFSG.
 
     All functions from the SHFQA and SHFSG device utils must also be available
-    within the SHFQC device utils. Exceptions from this rule must be hard coded
+    within the SHFQC device utils. Exceptions to this rule must be hard coded
     in ``IGNORED_SHFQA``, ``IGNORED_SHFSG``.
 
     This functions loops through all functions in the SHFQC device utils and
-    checks if they have the same interface than the repective SHFQA/SHFSG
+    checks if they have the same interface as the repective SHFQA/SHFSG
     function. Functions that are not forwarded to SHFQA/SHFSG must be hard coded
     in ``IGNORED_SHFQC``
     """
@@ -54,7 +66,7 @@ def test_shfqc_consistency():
             param: None for param in inspect.signature(function).parameters.keys()
         }
 
-        # Some functions are parametized to work for bith qa and sg channel
+        # Some functions are parametrized to work for both qa and sg channel
         calls = [parameter]
         if "channel_type" in parameter:
             calls.append(copy(parameter))

@@ -1,7 +1,12 @@
 """Zurich Instruments LabOne Python API Utility functions for SHFSG."""
 import typing as t
+from functools import partial
 
 from zhinst.utils import convert_awg_waveform
+from zhinst.utils.auto_generate_functions import (
+    configure_maker,
+    build_docstring_configure,
+)
 from zhinst.core import ziDAQServer, compile_seqc
 
 SHFSG_MAX_SIGNAL_GENERATOR_WAVEFORM_LENGTH = 98304
@@ -122,7 +127,6 @@ def write_to_waveform_memory(
             written to - there is one generator per channel.
         waveforms (dict): Dictionary of waveforms, the key specifies the
             waveform index to which to write the waveforms.
-
     """
     waveforms_path = f"/{device_id}/sgchannels/{channel_index}/awg/waveform/waves/"
     settings = []
@@ -134,21 +138,22 @@ def write_to_waveform_memory(
     daq.set(settings)
 
 
-def configure_marker_and_trigger(
-    daq: ziDAQServer,
+def get_marker_and_trigger_settings(
     device_id: str,
     channel_index: int,
     *,
     trigger_in_source: str,
     trigger_in_slope: str,
     marker_out_source: str,
-) -> None:
-    """Configures the trigger inputs and marker outputs of a specified AWG core.
+) -> t.List[t.Tuple[str, str]]:
+    """Provides settings for the trigger inputs and marker outputs of an AWG core.
+
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_marker_and_trigger', which will also apply the settings on the device.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFSG device identifier, e.g. `dev12004` or 'shf-dev12004'
         channel_index: Index of the used SG channel.
         trigger_in_source: Alias for the trigger input used by the
@@ -157,33 +162,40 @@ def configure_marker_and_trigger(
         trigger_in_slope: Alias for the slope of the input trigger used
             by sequencer. For a list of available values use
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/awg/auxtriggers/0/slope")
+            or `available_trigger_inputs` in zhinst.toolkit
         marker_out_source: Alias for the marker output source used by the
             sequencer. For a list of available values use
             daq.help(f"/{dev_id}/sgchannels/{channel_index}/marker/source")
+            or `available_trigger_slopes` in zhinst.toolkit
     """
     # Trigger input
-    settings = []
-    settings.append(
+    settings = [
         (
             f"/{device_id}/sgchannels/{channel_index}/awg/auxtriggers/0/channel",
             trigger_in_source,
-        )
-    )
-    settings.append(
+        ),
         (
             f"/{device_id}/sgchannels/{channel_index}/awg/auxtriggers/0/slope",
             trigger_in_slope,
-        )
-    )
-
-    # Marker output
-    settings.append(
+        ),
         (
             f"/{device_id}/sgchannels/{channel_index}/marker/source",
             marker_out_source,
-        )
-    )
-    daq.set(settings)
+        ),
+    ]
+
+    # Marker output
+    return settings
+
+
+configure_marker_and_trigger = configure_maker(
+    get_marker_and_trigger_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="Configures the trigger inputs and marker outputs of a "
+        "specified AWG core.",
+    ),
+)
 
 
 def configure_channel(
@@ -226,8 +238,7 @@ def configure_channel(
     daq.set(settings)
 
 
-def configure_pulse_modulation(
-    daq: ziDAQServer,
+def get_pulse_modulation_settings(
     device_id: str,
     channel_index: int,
     *,
@@ -238,16 +249,18 @@ def configure_pulse_modulation(
     global_amp: float = 0.5,
     gains: tuple = (1.0, -1.0, 1.0, 1.0),
     sine_generator_index: int = 0,
-) -> None:
-    """Configure the pulse modulation.
+) -> t.List[t.Union[t.Tuple[str, int], t.Tuple[str, float]]]:
+    """Provides a list of settings for the pulse modulation.
 
-    Configures the sine generator to digitally modulate the AWG output, for
-    generating single sideband AWG signals.
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_pulse_modulation', which will also apply the settings on the device.
+
+    Provides settings which would configure the sine generator to digitally modulate
+    the AWG output, for generating single sideband AWG signals.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFSG device identifier, e.g. `dev12004` or 'shf-dev12004'
         channel_index: Index of the used SG channel.
         enable: Enables modulation.
@@ -263,23 +276,34 @@ def configure_pulse_modulation(
             channel.
     """
     path = f"/{device_id}/sgchannels/{channel_index}/"
-    settings = []
+    settings = [
+        (path + f"sines/{sine_generator_index}/oscselect", osc_index),
+        (path + f"sines/{sine_generator_index}/phaseshift", phase),
+        (path + f"oscs/{osc_index}/freq", osc_frequency),
+        (path + "awg/modulation/enable", enable),
+        (path + "awg/outputamplitude", global_amp),
+        (path + "awg/outputs/0/gains/0", gains[0]),
+        (path + "awg/outputs/0/gains/1", gains[1]),
+        (path + "awg/outputs/1/gains/0", gains[2]),
+        (path + "awg/outputs/1/gains/1", gains[3]),
+    ]
 
-    settings.append((path + f"sines/{sine_generator_index}/oscselect", osc_index))
-    settings.append((path + f"sines/{sine_generator_index}/phaseshift", phase))
-    settings.append((path + f"oscs/{osc_index}/freq", osc_frequency))
-    settings.append((path + "awg/modulation/enable", enable))
-    settings.append((path + "awg/outputamplitude", global_amp))
-    settings.append((path + "awg/outputs/0/gains/0", gains[0]))
-    settings.append((path + "awg/outputs/0/gains/1", gains[1]))
-    settings.append((path + "awg/outputs/1/gains/0", gains[2]))
-    settings.append((path + "awg/outputs/1/gains/1", gains[3]))
-
-    daq.set(settings)
+    return settings
 
 
-def configure_sine_generation(
-    daq: ziDAQServer,
+configure_pulse_modulation = configure_maker(
+    get_pulse_modulation_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="""Configure the pulse modulation.
+
+    Configures the sine generator to digitally modulate the AWG output, for
+    generating single sideband AWG signals.""",
+    ),
+)
+
+
+def get_sine_generation_settings(
     device_id: str,
     channel_index: int,
     *,
@@ -289,16 +313,18 @@ def configure_sine_generation(
     phase: float = 0.0,
     gains: tuple = (0.0, 1.0, 1.0, 0.0),
     sine_generator_index: int = 0,
-) -> None:
-    """Configures the sine generator output of a specified channel.
+) -> t.List[t.Tuple[str, t.Any]]:
+    """Provides a list of settings for the sine generator output of a specified channel.
 
-    Configures the sine generator output of a specified channel for generating
-    continuous wave signals without the AWG.
+    This function only gathers all node settings and does not apply the values on the
+    device. It is intended to be used by higher-level APIs for simpler integrations.
+    Instead of using this function directly, consider calling
+    'configure_sine_generation', which will also apply the settings on the device.
+
+    Provides settings which would configure the sine generator output of a specified
+    channel for generating continuous wave signals without the AWG.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFSG device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index of the used SG channel.
         enable: Enables the sine generator output.
@@ -315,21 +341,31 @@ def configure_sine_generation(
             channel.
     """
     path = f"/{device_id}/sgchannels/{channel_index}/sines/{sine_generator_index}/"
-    settings = []
-
-    settings.append((path + "i/enable", enable))
-    settings.append((path + "q/enable", enable))
-    settings.append((path + "i/sin/amplitude", gains[0]))
-    settings.append((path + "i/cos/amplitude", gains[1]))
-    settings.append((path + "q/sin/amplitude", gains[2]))
-    settings.append((path + "q/cos/amplitude", gains[3]))
-    settings.append((path + "oscselect", osc_index))
-    settings.append(
+    settings = [
+        (path + "i/enable", enable),
+        (path + "q/enable", enable),
+        (path + "i/sin/amplitude", gains[0]),
+        (path + "i/cos/amplitude", gains[1]),
+        (path + "q/sin/amplitude", gains[2]),
+        (path + "q/cos/amplitude", gains[3]),
+        (path + "oscselect", osc_index),
         (
             f"/{device_id}/sgchannels/{channel_index}/oscs/{osc_index}/freq",
             osc_frequency,
-        )
-    )
-    settings.append((path + "phaseshift", phase))
+        ),
+        (path + "phaseshift", phase),
+    ]
 
-    daq.set(settings)
+    return settings
+
+
+configure_sine_generation = configure_maker(
+    get_sine_generation_settings,
+    partial(
+        build_docstring_configure,
+        new_first_line="""Configures the sine generator output of a specified channel.
+
+    Configures the sine generator output of a specified channel for generating
+    continuous wave signals without the AWG.""",
+    ),
+)
