@@ -1189,8 +1189,13 @@ def disable_everything(daq: zi.ziDAQServer, device: str) -> t.List[t.Tuple[str, 
             settings.append(["/{}/scopes/*/stream/enables/*".format(device), 0])
     if "triggers" in (node.lower() for node in node_branches):
         settings.append(["/{}/triggers/out/*/drive".format(device), 0])
-    daq.set(settings)
-    daq.sync()
+
+    try:
+        daq.set(settings)
+    except RuntimeError:
+        # Disabling should not throw if a node does not exist
+        pass
+
     return settings
 
 
