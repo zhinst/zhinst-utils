@@ -121,14 +121,14 @@ def get_feedback_system_description(
             return QCCSSystemDescription(
                 initial_latency_smpl=96,
                 initial_steps=5,
-                pattern=[(4, 9), (4, 8), (4, 8), (4, 9), (5, 8), (4, 8)],
+                pattern=[(4, 9), (4, 8), (5, 8), (4, 9), (4, 8), (4, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
                 initial_latency_smpl=100,
                 initial_steps=7,
-                pattern=[(4, 8), (4, 9), (4, 8), (5, 8), (4, 9), (4, 8)],
+                pattern=[(4, 8), (5, 9), (4, 8), (4, 8), (4, 9), (4, 8)],
                 rtlogger_correction=2,
             )
         raise ValueError(f"Unknown PQSC mode ({pqsc_mode})")
@@ -151,20 +151,20 @@ def get_feedback_system_description(
                     )
                 )
             return QCCSSystemDescription(
-                initial_latency_smpl=23,
-                initial_steps=1,
+                initial_latency_smpl=25,
+                initial_steps=2,
                 pattern=[(1, 2)] * 25,
             )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
-                initial_latency_smpl=91,
+                initial_latency_smpl=92,
                 initial_steps=5,
                 pattern=[(3, 9), (5, 8), (5, 8), (2, 9), (5, 8), (5, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
-                initial_latency_smpl=94,
+                initial_latency_smpl=95,
                 initial_steps=7,
                 pattern=[(5, 8), (5, 9), (2, 8), (5, 8), (5, 9), (3, 8)],
                 rtlogger_correction=2,
