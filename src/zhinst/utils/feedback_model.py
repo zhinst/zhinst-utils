@@ -120,14 +120,14 @@ def get_feedback_system_description(
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_cycles=96,
-                initial_steps=5,
+                initial_steps=4,
                 pattern=[(4, 9), (4, 8), (5, 8), (4, 9), (4, 8), (4, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
                 initial_latency_cycles=100,
-                initial_steps=7,
+                initial_steps=6,
                 pattern=[(4, 8), (5, 9), (4, 8), (4, 8), (4, 9), (4, 8)],
                 rtlogger_correction=2,
             )
@@ -158,14 +158,14 @@ def get_feedback_system_description(
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
                 initial_latency_cycles=92,
-                initial_steps=5,
+                initial_steps=4,
                 pattern=[(3, 9), (5, 8), (5, 8), (2, 9), (5, 8), (5, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
                 initial_latency_cycles=95,
-                initial_steps=7,
+                initial_steps=6,
                 pattern=[(5, 8), (5, 9), (2, 8), (5, 8), (5, 9), (3, 8)],
                 rtlogger_correction=2,
             )
