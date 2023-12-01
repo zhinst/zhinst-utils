@@ -54,22 +54,22 @@ class FeedbackPath(IntEnum):
 class QCCSSystemDescription:
     """Describe the behavior of a QCCS system with respect to feedback latency."""
 
-    initial_latency_smpl: int
-    """[samples] Minimum latency for the smallest amount of
-    integration samples. Always a multiple of 4."""
+    initial_latency_cycles: int
+    """[clock cycles] Minimum latency for the smallest amount of
+    integration length."""
     initial_steps: int
-    """[steps] Integration length increment until the
+    """[steps] Integration length increment steps, until the
     first latency increment."""
     pattern: List[Tuple[int, int]]
     """[(clock cycles, steps),...] The pattern of periodic
-    latency increments with respect to integration sample increments """
+    latency increments with respect to integration length increments """
     period_steps: int = 50
     """[steps] Period of the latency increment pattern."""
-    latency_in_period_step: int = 25
+    latency_in_period_cycles: int = 25
     """[clock cycles] Latency increment for a full period."""
     rtlogger_correction: int = 0
-    """[clock_cycles] Correction needed on top of the RTLogger recorded
-    latency to get the latency seen by the sequencer"""
+    """[clock cycles] Correction needed on top of the RTLogger recorded
+    latency, to match the latency seen by the sequencer"""
 
 
 def get_feedback_system_description(
@@ -119,14 +119,14 @@ def get_feedback_system_description(
             )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
-                initial_latency_smpl=96,
+                initial_latency_cycles=96,
                 initial_steps=5,
                 pattern=[(4, 9), (4, 8), (5, 8), (4, 9), (4, 8), (4, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
-                initial_latency_smpl=100,
+                initial_latency_cycles=100,
                 initial_steps=7,
                 pattern=[(4, 8), (5, 9), (4, 8), (4, 8), (4, 9), (4, 8)],
                 rtlogger_correction=2,
@@ -151,20 +151,20 @@ def get_feedback_system_description(
                     )
                 )
             return QCCSSystemDescription(
-                initial_latency_smpl=25,
+                initial_latency_cycles=25,
                 initial_steps=2,
                 pattern=[(1, 2)] * 25,
             )
         if pqsc_mode is PQSCMode.REGISTER_FORWARD:
             return QCCSSystemDescription(
-                initial_latency_smpl=92,
+                initial_latency_cycles=92,
                 initial_steps=5,
                 pattern=[(3, 9), (5, 8), (5, 8), (2, 9), (5, 8), (5, 8)],
                 rtlogger_correction=2,
             )
         if pqsc_mode is PQSCMode.DECODER:
             return QCCSSystemDescription(
-                initial_latency_smpl=95,
+                initial_latency_cycles=95,
                 initial_steps=7,
                 pattern=[(5, 8), (5, 9), (2, 8), (5, 8), (5, 9), (3, 8)],
                 rtlogger_correction=2,
@@ -201,7 +201,7 @@ class QCCSFeedbackModel:
         """
         # before the periodic pattern
         model = np.array(
-            [self.description.initial_latency_smpl] * self.description.initial_steps,
+            [self.description.initial_latency_cycles] * self.description.initial_steps,
             dtype=np.int64,
         )
 
@@ -224,13 +224,13 @@ class QCCSFeedbackModel:
             index -= self.description.initial_steps + 1
             lat_full_periods = (
                 index // self.description.period_steps
-            ) * self.description.latency_in_period_step  # latency from full periods
+            ) * self.description.latency_in_period_cycles  # latency from full periods
             index = (
                 index % self.description.period_steps
             )  # remainder within the periodic pattern
             # total latency
             return int(
-                self.description.initial_latency_smpl
+                self.description.initial_latency_cycles
                 + periodic_mdl[index]
                 + lat_full_periods
             )
