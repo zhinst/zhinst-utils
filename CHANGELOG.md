@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.3.6
+
+* Adapt feedback latency model for LabOne 23.10.51605
+  * Modify default values of `QCCSSystemDescription`
+
 ## Version 0.3.5
 
 * Adapt feedback latency model for LabOne 23.10
