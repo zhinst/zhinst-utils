@@ -332,6 +332,7 @@ def configure_weighted_integration(
     *,
     weights: dict,
     integration_delay: float = 0.0,
+    integration_length: t.Optional[int] = None,
     clear_existing: bool = True,
 ) -> None:
     """Configures the weighted integration on a specified channel.
@@ -349,6 +350,9 @@ def configure_weighted_integration(
         weights: Dictionary containing the complex weight vectors, where keys
             correspond to the indices of the integration units to be configured.
         integration_delay: Delay in seconds before starting readout.
+        integration_length: Number of samples over which the weighted integration
+            runs. If set to None, the integration length is determined by the
+            length of the first weights vector.
         clear_existing: Specify whether to set all the integration weights to
             zero before proceeding with the present upload.
     """
@@ -364,7 +368,8 @@ def configure_weighted_integration(
     for integration_unit, weight in weights.items():
         settings.append((integration_path + f"weights/{integration_unit}/wave", weight))
 
-    integration_length = len(next(iter(weights.values())))
+    if integration_length is None:
+        integration_length = len(next(iter(weights.values())))
     settings.append((integration_path + "length", integration_length))
     settings.append((integration_path + "delay", integration_delay))
 
