@@ -325,8 +325,7 @@ def enable_scope(
         raise RuntimeError(f"The scope for device {device_id} could not be enabled")
 
 
-def configure_weighted_integration(
-    daq: ziDAQServer,
+def get_configure_weighted_integration_settings(
     device_id: str,
     channel_index: int,
     *,
@@ -335,12 +334,9 @@ def configure_weighted_integration(
     integration_length: t.Optional[int] = None,
     clear_existing: bool = True,
 ) -> None:
-    """Configures the weighted integration on a specified channel.
+    """Provides a list of settings for a weighted integration.
 
     Args:
-        daq: Instance of a Zurich Instruments API session connected to a Data
-            Server. The device with identifier device_id is assumed to already
-            be connected to this instance.
         device_id: SHFQA device identifier, e.g. `dev12004` or 'shf-dev12004'.
         channel_index: Index specifying which group of integration units the
             integration weights should be uploaded to - each channel is
@@ -360,10 +356,9 @@ def configure_weighted_integration(
 
     integration_path = f"/{device_id}/qachannels/{channel_index}/readout/integration/"
 
-    if clear_existing:
-        daq.syncSetInt(integration_path + "clearweight", 1)
-
     settings = []
+    if clear_existing:
+        settings.append((integration_path + "clearweight", 1))
 
     for integration_unit, weight in weights.items():
         settings.append((integration_path + f"weights/{integration_unit}/wave", weight))
@@ -373,7 +368,16 @@ def configure_weighted_integration(
     settings.append((integration_path + "length", integration_length))
     settings.append((integration_path + "delay", integration_delay))
 
-    daq.set(settings)
+    return settings
+
+
+configure_weighted_integration = configure_maker(
+    get_configure_weighted_integration_settings,
+    partial(
+        build_docstring_configure,
+        "Configures the weighted integration on a specified channel.",
+    ),
+)
 
 
 def get_result_logger_for_spectroscopy_settings(
