@@ -1200,7 +1200,9 @@ def disable_everything(daq: zi.ziDAQServer, device: str) -> t.List[t.Tuple[str, 
 
 
 def convert_awg_waveform(
-    wave1: np.ndarray, wave2: np.ndarray = None, markers: np.ndarray = None
+    wave1: np.ndarray,
+    wave2: t.Optional[np.ndarray] = None,
+    markers: t.Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Convert one or multiple waveforms into the native AWG waveform format.
 
