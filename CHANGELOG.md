@@ -1,9 +1,11 @@
 # Changelog
 
-## Version 0.3.7
+## Version 0.4.0
 
 * Add optional `integration_length` argument to the `configure_weighted_integration` function of the SHFQA / SHFQC. If the argument is set to `None` (default value), the integration length is determined by the length of the first integration weights vector, which is the same behavior as in the previous versions to ensure backwards-compatibility.
 * Fix typehints for `convert_awg_waveform` to correctly hint the two optional arguments `wave2` and `markers`
+* Move feedback model into separate package `zhinst-timing-models`. The new package is reimported so the imports can stay the same. But its recommended to use the new package directly.
+
 ## Version 0.3.6
 
 * Adapt feedback latency model for LabOne 23.10.51605
