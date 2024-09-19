@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 0.4.2
+* Fix bug when using `daq.get` with vector nodes where the settingsonly flag needs to be rested explicitly.
+
 ## Version 0.4.1
 
 * Fix bug in `configure_scope` which used the `num_segments` to determine if the 

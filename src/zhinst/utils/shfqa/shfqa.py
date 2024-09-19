@@ -183,7 +183,7 @@ def get_scope_data(daq: ziDAQServer, device_id: str, *, timeout: float = 5.0) ->
     for channel in channels:
         if daq.getInt(f"/{device_id}/scopes/0/channels/{channel}/enable"):
             path = f"/{device_id}/scopes/0/channels/{channel}/wave"
-            data = daq.get(path.lower(), flat=True)
+            data = daq.get(path.lower(), flat=True, settingsonly=False)
             vector = data[path]
 
             recorded_data[channel] = vector[0]["vector"]
@@ -554,6 +554,7 @@ def get_result_logger_data(
     data = daq.get(
         f"/{device_id}/qachannels/{channel_index}/{mode}/result/data/*/wave",
         flat=True,
+        settingsonly=False,
     )
 
     result = np.array([d[0]["vector"] for d in data.values()])
