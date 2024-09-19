@@ -41,6 +41,4 @@ help(zhinst.utils.shfqc)
 ## About
 
 More information about programming with Zurich Instruments devices is available in the
-[package documentation](https://docs.zhinst.com/zhinst-utils/en/latest/)
-and the
-[LabOne Programming Manual](https://docs.zhinst.com/labone_programming_manual/overview.html).
+[LabOne API Documentation](https://docs.zhinst.com/labone_api_user_manual/).
