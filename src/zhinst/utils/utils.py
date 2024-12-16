@@ -206,6 +206,10 @@ def api_server_version_check(daq: zi.ziDAQServer) -> bool:
 
     Raises:
         Warning: If the Versions of API and Data Server do not match.
+
+    .. deprecated:: 25.01
+       Calling this function is redundant. The ziDAQServer will automatically check
+       the server version upon connection and throw an exception if it doesn't match.
     """
     api_version = daq.version()
     api_revision = daq.revision()
