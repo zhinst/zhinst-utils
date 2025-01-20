@@ -30,6 +30,7 @@ def create_api_session(
     server_host: str = None,
     server_port: int = 8004,
     *,
+    allow_version_mismatch=False,
     required_devtype: str = None,
     required_options: str = None,
     required_err_msg: str = None,
@@ -49,6 +50,10 @@ def create_api_session(
         In this case it will try to connect to the local data server or device
         internal data server (local server has priority).
       server_port: The port number of the data server. The default port is 8004.
+      allow_version_mismatch: If set to True, the connection to the data-server
+        will succeed even if the data-server is on a different version of LabOne.
+        If False, an exception will be raised if the data-server is on a
+        different version. (default = False)
       required_devtype: Deprecated: This option will be ignored.
       required_options: Deprecated: This option will be ignored.
       required_err_msg: Deprecated: This option will be ignored.
@@ -147,12 +152,21 @@ def create_api_session(
             session_info.data_server[0],
             session_info.data_server[1],
             session_info.api_level,
+            allow_version_mismatch=allow_version_mismatch,
         )
     except RuntimeError as error:
         raise RuntimeError(
             "Failed to connect to the data server {}:"
             "{}".format(session_info.data_server[0], session_info.data_server[1])
         ) from error
+    except TypeError as error:
+        if "allow_version_mismatch" not in error.args[0]:
+            raise
+        session_info = zi.ziDAQServer(
+            session_info.data_server[0],
+            session_info.data_server[1],
+            session_info.api_level,
+        )
 
     connected = False
 

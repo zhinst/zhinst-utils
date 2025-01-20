@@ -1,6 +1,10 @@
 # Changelog
 
-## Version 0.4.2
+## Version 0.6.0
+* Remove `versioning` module
+* Adapt `create_api_session` to expose the `allow_version_mismatch` flag.
+
+## Version 0.5.0
 * Fix bug when using `daq.get` with vector nodes where the settingsonly flag needs to be rested explicitly.
 
 ## Version 0.4.1
