@@ -552,13 +552,16 @@ def get_result_logger_data(
         ) from error
 
     data = daq.get(
-        f"/{device_id}/qachannels/{channel_index}/{mode}/result/data/*/wave",
+        f"/{device_id}/qachannels/{channel_index}/{mode}/result/data/*",
         flat=True,
+        recursive=True,
         settingsonly=False,
     )
 
-    result = np.array([d[0]["vector"] for d in data.values()])
-    return result
+    # make sure only "wave" nodes are contained in the results
+    wave_items = filter(lambda d: d[0].endswith("wave"), data.items())
+
+    return np.array([item[1][0]["vector"] for item in wave_items])
 
 
 def get_channel_settings(
