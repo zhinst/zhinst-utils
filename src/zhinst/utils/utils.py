@@ -4,14 +4,21 @@ This module provides basic utility functions to ease the use of the native
 Python API zhinst-core.
 """
 
+from __future__ import annotations
+
+import datetime
 import os
 import re
-import time
-import warnings
 import socket
+import time
 import typing as t
+import warnings
+from contextlib import suppress
 from pathlib import Path
-import datetime
+
+import numpy as np
+
+import zhinst.core as zi
 
 try:
     # load_labone_mat() requires scipy.io.loadmat()
@@ -20,8 +27,6 @@ except ImportError as e:
     # No fallback. No complaints upon importing zhinst.utils, handle/raise
     # exception when the function load_labone_mat() is called.
     __SCIPY_IMPORT_ERROR = e
-import numpy as np
-import zhinst.core as zi
 
 
 def create_api_session(
@@ -1348,7 +1353,7 @@ def wait_for_state_change(
     value: int,
     timeout: float = 1.0,
     sleep_time: float = 0.005,
-) -> None:
+) -> None | int:
     """Waits until a node has the expected state/value.
 
     Attention: Only supports integer values as reference.
@@ -1358,20 +1363,55 @@ def wait_for_state_change(
         node: Path of the node.
         value: expected value.
         timeout: max in seconds. (default = 1.0)
-        sleep_time: sleep interval in seconds. (default = 0.005)
+        sleep_time: sleep interval in seconds. Only relevant for MF, UHF and
+            HF2 devices. (default = 0.005)
+
+    Returns:
+        Timestamp the node changed to the expected value. In case of MF, UHF and
+        HF2 devices nothing is returned.
 
     Raises:
         TimeoutError: If the node did not changed to the expected value within
             the given time.
     """
     start_time = time.time()
-    while start_time + timeout >= time.time() and daq.getInt(node) != value:
-        time.sleep(sleep_time)
-    if daq.getInt(node) != value:
-        raise TimeoutError(
-            f"{node} did not change to expected value {value} within "
-            f"{timeout} seconds."
-        )
+    try:
+        temp_group = daq.createSubscriptionGroup()
+        try:
+            daq.subscribe(node, group_id=temp_group)
+            # Ensure we have the initial value to cover cases in which the requested
+            # value is already set.
+            daq.getAsEvent(node, group_id=temp_group)
+            # Poll until the value matches or the timeout is reached. We need a loop
+            # to cover cases in which the node changes it value multiple times
+            # before reaching the expected value.
+            remaining_time = start_time + timeout - time.time()
+            while remaining_time > 0:
+                poll_result = daq.poll(
+                    0, int(remaining_time * 1000), flat=True, group_id=temp_group
+                )
+                for i, polled_value in enumerate(
+                    poll_result.get(node, {}).get("value", [])
+                ):
+                    if polled_value == value:
+                        return poll_result[node]["timestamp"][i]
+                remaining_time = start_time + timeout - time.time()
+        finally:
+            with suppress(AttributeError):
+                daq.deleteSubscriptionGroup(temp_group)
+    except (zi.errors.InvalidArgumentError, AttributeError):
+        # If the device or the api does not support subscription groups we
+        # fall back to the manual fetch method.
+        actual_value = daq.getInt(node)
+        while start_time + timeout >= time.time() and actual_value != value:
+            time.sleep(sleep_time)
+            actual_value = daq.getInt(node)
+        if actual_value == value:
+            return None
+
+    raise TimeoutError(
+        f"{node} did not change to expected value {value} within " f"{timeout} seconds."
+    )
 
 
 def assert_node_changes_to_expected_value(

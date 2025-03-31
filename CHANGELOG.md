@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 0.7.1
+* Optimize `wait_for_state_change` to avoid repetitive get requests.
+
 ## Version 0.7.0
 * Change `get_result_logger_data` to make it compatible with spectroscopy mode.
 
