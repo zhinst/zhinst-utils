@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 0.7.0
+* Change `get_result_logger_data` to make it compatible with spectroscopy mode.
+
 ## Version 0.6.0
 * Remove `versioning` module
 * Adapt `create_api_session` to expose the `allow_version_mismatch` flag.
