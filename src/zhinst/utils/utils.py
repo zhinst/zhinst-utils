@@ -1391,10 +1391,10 @@ def wait_for_state_change(
                     0, int(remaining_time * 1000), flat=True, group_id=temp_group
                 )
                 for i, polled_value in enumerate(
-                    poll_result.get(node, {}).get("value", [])
+                    poll_result.get(node.casefold(), {}).get("value", [])
                 ):
                     if polled_value == value:
-                        return poll_result[node]["timestamp"][i]
+                        return poll_result[node.casefold()]["timestamp"][i]
                 remaining_time = start_time + timeout - time.time()
         finally:
             with suppress(AttributeError):
