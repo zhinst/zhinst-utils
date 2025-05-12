@@ -35,7 +35,7 @@ def create_api_session(
     server_host: str = None,
     server_port: int = 8004,
     *,
-    allow_version_mismatch: bool=False,
+    allow_version_mismatch: bool = False,
     required_devtype: str = None,
     required_options: str = None,
     required_err_msg: str = None,
