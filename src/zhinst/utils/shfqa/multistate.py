@@ -382,7 +382,7 @@ def get_qudits_results(
     Args:
         daq: An instance of the core.ziDAQServer class
         dev: The device id.
-        qa_channels: The index of the QA channel
+        qa_channel: The index of the QA channel
 
     Returns:
         A dictionary with the qudit index keys and result vector values.
