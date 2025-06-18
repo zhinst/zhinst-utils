@@ -1390,10 +1390,10 @@ def wait_for_state_change(
                 poll_result = daq.poll(
                     0, int(remaining_time * 1000), flat=True, group_id=temp_group
                 )
-                for i, polled_value in enumerate(
+                for i, actual_value in enumerate(
                     poll_result.get(node.casefold(), {}).get("value", [])
                 ):
-                    if polled_value == value:
+                    if actual_value == value:
                         return poll_result[node.casefold()]["timestamp"][i]
                 remaining_time = start_time + timeout - time.time()
         finally:
@@ -1410,7 +1410,8 @@ def wait_for_state_change(
             return None
 
     raise TimeoutError(
-        f"{node} did not change to expected value {value} within " f"{timeout} seconds."
+        f"{node} did not change to expected value {value} but is {actual_value} after "
+        f"{timeout} seconds."
     )
 
 
