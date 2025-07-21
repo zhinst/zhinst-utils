@@ -1375,6 +1375,7 @@ def wait_for_state_change(
             the given time.
     """
     start_time = time.time()
+    actual_value = None
     try:
         temp_group = daq.createSubscriptionGroup()
         try:
@@ -1409,10 +1410,18 @@ def wait_for_state_change(
         if actual_value == value:
             return None
 
-    raise TimeoutError(
-        f"{node} did not change to expected value {value} but is {actual_value} after "
-        f"{timeout} seconds."
-    )
+    if actual_value is None:
+        timeout_message = (
+            f"Did not yet receive any value (instead of expected {value}) for {node}"
+            f" after {timeout} seconds."
+        )
+    else:
+        timeout_message = (
+            f"{node} did not change to expected value {value} but is {actual_value}"
+            f" after {timeout} seconds."
+        )
+
+    raise TimeoutError(timeout_message)
 
 
 def assert_node_changes_to_expected_value(
