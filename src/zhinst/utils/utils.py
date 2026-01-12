@@ -1251,7 +1251,7 @@ def convert_awg_waveform(
     def uint16_waveform(wave):
         wave = np.asarray(wave)
         if np.issubdtype(wave.dtype, np.floating):
-            return np.asarray((np.power(2, 15) - 1) * wave, dtype=np.uint16)
+            return ((np.power(2, 15) - 1) * wave).astype(np.int16).view(np.uint16)
         return np.asarray(wave, dtype=np.uint16)
 
     wave1_uint = uint16_waveform(wave1)
