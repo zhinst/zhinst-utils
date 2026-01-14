@@ -1,7 +1,10 @@
 # Changelog
 
 ## Version 0.7.1
-* Optimize `wait_for_state_change` to avoid repetitive get requests.
+* Fix bug in `convert_awg_waveform` where negative waveform values were incorrectly converted to 0 on Linux/aarch64
+* Fix bug in `wait_for_state_change` where the actual value was not shown in timeout exceptions
+* Fix `wait_for_state_change` to be case insensitive when comparing state values
+* Optimize `wait_for_state_change` to avoid repetitive get requests
 
 ## Version 0.7.0
 * Change `get_result_logger_data` to make it compatible with spectroscopy mode.
